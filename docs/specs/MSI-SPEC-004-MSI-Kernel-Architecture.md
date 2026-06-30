@@ -143,16 +143,52 @@ Mission execution may be:
 
 ## 4.6 Constraint Engine
 
-Applies operational constraints.
+Applies operational constraints to mission execution.
+
+Constraints are divided into two categories.
+
+### Soft Constraints
+
+Soft constraints may be relaxed under explicit user authorization or AI-approved adaptive strategies.
 
 Examples:
 
-* MAX_ALTITUDE
-* NO_FLY_ZONE
-* SPEED_LIMIT
-* BATTERY_RESERVE
+* battery reserve threshold
+* wind tolerance
+* mission duration target
+* thermal warning margins
+* formation spacing
 
-Constraints limit mission behavior.
+Soft constraints allow mission flexibility.
+
+---
+
+### Hard Constraints
+
+Hard constraints are non-negotiable safety boundaries.
+
+They cannot be overridden by AI, mission logic or user commands.
+
+Examples:
+
+* collision avoidance
+* critical battery shutdown
+* geofence hard boundary
+* motor failure safety behavior
+* human safety radius
+
+Hard constraints always have higher priority than mission continuity.
+
+Constraint hierarchy:
+
+Hard Constraints
+↓
+Safety Layer
+↓
+Mission Logic
+↓
+AI Optimization
+
 
 ---
 

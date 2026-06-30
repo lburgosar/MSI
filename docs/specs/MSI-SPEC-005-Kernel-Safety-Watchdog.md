@@ -150,7 +150,24 @@ The Safety Layer is the lowest and highest-priority authority inside the MSI Ker
 
 ---
 
-## 11. Conclusion
+# 11. Constraint Enforcement
+
+Safety enforcement depends on constraint classification.
+
+Hard constraints must always be enforced.
+
+Soft constraints may be adjusted under:
+
+* user authorization
+* AI adaptive optimization
+* mission replanning logic
+
+The Safety Layer always preserves hard constraints.
+
+Neither AI nor mission logic may violate hard constraints.
+
+---
+## 12. Conclusion
 
 The MSI Kernel must be designed under the assumption that failure is normal.
 
