@@ -17,3 +17,14 @@ Thumbs.db
 
 # macOS
 .DS_Store
+
+# =============================================================================
+# MSI runtime data
+# =============================================================================
+
+# Mission reports and execution logs
+manager/mission_studio/data/mission_logs/
+
+# Live communication state between Studio and Monitor
+manager/shared/live_mission_state.json
+manager/shared/*.tmp

@@ -3,16 +3,10 @@
 MSI Mission Studio - Screen Manager
 ===============================================================================
 
-Este módulo administra la pantalla activa de MSI Mission Studio.
+Administra el flujo entre SplashScreen, HomeScreen y MissionScreen.
 
-Responsabilidades:
-
-- mantener una referencia a la pantalla actualmente visible;
-- delegar eventos, actualizaciones y renderizado;
-- permitir futuras transiciones entre pantallas.
-
-MissionStudio utiliza este administrador sin necesitar conocer los detalles
-internos de HomeScreen, SimulationScreen u otras pantallas futuras.
+También conserva el mismo MissionState cuando la entrevista pasa a la
+planificación, evitando crear estados independientes para una sola misión.
 
 ===============================================================================
 """
@@ -22,37 +16,56 @@ from __future__ import annotations
 import pygame
 
 from ui.screens.home_screen import HomeScreen
+from ui.screens.mission_screen import MissionScreen
+from ui.screens.splash_screen import SplashScreen
 
 
 class ScreenManager:
     """
-    Administra la pantalla activa de MSI Mission Studio.
+    Administra la pantalla activa.
     """
 
     def __init__(self) -> None:
-        """
-        Crea la pantalla inicial de la aplicación.
-        """
+        self.active_screen = SplashScreen()
 
-        self.active_screen = HomeScreen()
-
-    def process_event(self, event: pygame.event.Event) -> None:
-        """
-        Entrega un evento a la pantalla activa.
-        """
-
+    def process_event(
+        self,
+        event: pygame.event.Event,
+    ) -> None:
         self.active_screen.process_event(event)
 
-    def update(self) -> None:
-        """
-        Actualiza la pantalla activa.
-        """
+    def update(
+        self,
+        delta_time: float,
+    ) -> None:
+        self.active_screen.update(delta_time)
 
-        self.active_screen.update()
+        next_screen = (
+            self.active_screen.get_next_screen()
+        )
 
-    def render(self, screen: pygame.Surface) -> None:
-        """
-        Solicita a la pantalla activa que dibuje su contenido.
-        """
+        if next_screen == "home":
+            self.active_screen = HomeScreen()
 
+        elif next_screen == "mission":
+            mission_text = (
+                self.active_screen.get_mission_text()
+            )
+
+            mission_state = (
+                self.active_screen.get_mission_state()
+            )
+
+            self.active_screen = MissionScreen(
+                mission_text=mission_text,
+                mission_state=mission_state,
+            )
+
+        elif next_screen == "home_from_mission":
+            self.active_screen = HomeScreen()
+
+    def render(
+        self,
+        screen: pygame.Surface,
+    ) -> None:
         self.active_screen.render(screen)

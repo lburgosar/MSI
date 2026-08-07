@@ -3,16 +3,16 @@
 MSI Mission Studio - Application
 ===============================================================================
 
-Este módulo contiene la clase principal de MSI Mission Studio.
+Contiene la aplicación principal.
 
-La clase MissionStudio es responsable de:
+Responsabilidades:
 
 - inicializar Pygame;
-- crear la ventana principal;
-- administrar el ciclo de ejecución;
-- procesar eventos globales;
-- delegar la lógica visual al ScreenManager;
-- cerrar correctamente los recursos utilizados.
+- crear una ventana redimensionable;
+- administrar el ciclo principal;
+- procesar teclado, mouse y eventos táctiles;
+- controlar el tiempo entre cuadros;
+- delegar la interfaz al ScreenManager.
 
 ===============================================================================
 """
@@ -27,29 +27,26 @@ from core.screen_manager import ScreenManager
 
 class MissionStudio:
     """
-    Clase principal de MSI Mission Studio.
+    Aplicación principal de MSI Mission Studio.
     """
 
     def __init__(self) -> None:
-        """
-        Inicializa Pygame y los componentes principales de la aplicación.
-        """
-
         pygame.init()
 
         self.screen = pygame.display.set_mode(
             (
                 theme.WINDOW_WIDTH,
                 theme.WINDOW_HEIGHT,
-            )
+            ),
+            pygame.RESIZABLE,
         )
 
         pygame.display.set_caption(theme.WINDOW_TITLE)
 
         self.clock = pygame.time.Clock()
         self.running = True
+        self.delta_time = 0.0
 
-        # Administra la pantalla actualmente visible.
         self.screen_manager = ScreenManager()
 
     def process_events(self) -> None:
@@ -62,6 +59,27 @@ class MissionStudio:
                 self.running = False
                 continue
 
+            if event.type == pygame.VIDEORESIZE:
+                new_width = max(
+                    theme.MIN_WINDOW_WIDTH,
+                    event.w,
+                )
+
+                new_height = max(
+                    theme.MIN_WINDOW_HEIGHT,
+                    event.h,
+                )
+
+                self.screen = pygame.display.set_mode(
+                    (
+                        new_width,
+                        new_height,
+                    ),
+                    pygame.RESIZABLE,
+                )
+
+                continue
+
             self.screen_manager.process_event(event)
 
     def update(self) -> None:
@@ -69,11 +87,11 @@ class MissionStudio:
         Actualiza la pantalla activa.
         """
 
-        self.screen_manager.update()
+        self.screen_manager.update(self.delta_time)
 
     def render(self) -> None:
         """
-        Renderiza la pantalla activa y presenta el cuadro.
+        Renderiza la pantalla activa.
         """
 
         self.screen_manager.render(self.screen)
@@ -81,7 +99,7 @@ class MissionStudio:
 
     def run(self) -> None:
         """
-        Ejecuta el ciclo principal de MSI Mission Studio.
+        Ejecuta el ciclo principal.
         """
 
         try:
@@ -90,7 +108,9 @@ class MissionStudio:
                 self.update()
                 self.render()
 
-                self.clock.tick(theme.FPS)
+                self.delta_time = (
+                    self.clock.tick(theme.FPS) / 1000.0
+                )
 
         finally:
             pygame.quit()

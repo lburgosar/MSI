@@ -1,75 +1,78 @@
 """
 ===============================================================================
-MSI Theme
+MSI Mission Studio - Theme
 ===============================================================================
 
-Este módulo centraliza toda la configuración visual de MSI Mission Studio.
+Centraliza la configuración visual general de Mission Studio.
 
-¿Por qué existe?
-
-Queremos mantener separados:
-
-- el diseño visual;
-- la lógica de la aplicación;
-- el comportamiento de las pantallas.
-
-De esta forma, si más adelante cambiamos colores, tamaños o tipografías,
-solo será necesario modificar este archivo.
+No contiene posiciones absolutas de las pantallas. La distribución adaptable
+se calcula en core/layout.py según el tamaño disponible.
 
 ===============================================================================
 """
 
 
 # =============================================================================
-# CONFIGURACIÓN DE LA VENTANA
+# VENTANA
 # =============================================================================
 
-# Ancho de la ventana principal, expresado en píxeles.
 WINDOW_WIDTH = 1280
-
-# Alto de la ventana principal, expresado en píxeles.
 WINDOW_HEIGHT = 800
 
-# Texto mostrado en la barra de título del sistema operativo.
+MIN_WINDOW_WIDTH = 520
+MIN_WINDOW_HEIGHT = 620
+
 WINDOW_TITLE = "MSI Mission Studio"
 
-# Cantidad máxima de cuadros por segundo.
 FPS = 60
 
 
 # =============================================================================
-# PALETA DE COLORES
+# COLORES
 # =============================================================================
 
-# Fondo principal de la aplicación.
-# Es un gris muy claro para evitar el blanco puro y mantener una estética suave.
 BACKGROUND = (245, 245, 247)
-
-# Fondo de paneles, tarjetas y componentes destacados.
 PANEL = (255, 255, 255)
 
-# Bordes sutiles para separar componentes sin generar ruido visual.
-BORDER = (228, 228, 230)
+BORDER = (220, 220, 224)
+SHADOW = (232, 232, 235)
 
-# Color principal del texto.
-TEXT = (32, 32, 32)
+TEXT = (30, 30, 32)
+SECONDARY_TEXT = (125, 125, 130)
+MUTED_TEXT = (165, 165, 170)
 
-# Color utilizado en acciones principales, estados activos y controles.
 PRIMARY = (0, 122, 255)
+PRIMARY_SOFT = (232, 243, 255)
+PRIMARY_HOVER = (0, 106, 224)
 
-# Color utilizado en descripciones, ayudas y textos secundarios.
-SECONDARY_TEXT = (120, 120, 120)
+VINEYARD_ROW = (64, 92, 58)
+GRID_LINE = (226, 226, 230)
+
+SUCCESS = (52, 168, 83)
+WARNING = (225, 156, 46)
+DANGER = (205, 70, 70)
 
 
 # =============================================================================
 # TIPOGRAFÍA
 # =============================================================================
 
-# Tamaño del título principal.
-TITLE_SIZE = 42
+SPLASH_TITLE_SIZE = 52
+TITLE_SIZE = 38
+SUBTITLE_SIZE = 20
+PROMPT_SIZE = 21
+TEXT_SIZE = 17
+SMALL_TEXT_SIZE = 14
 
-# Tamaño de los subtítulos.
-SUBTITLE_SIZE = 22
 
-# Tamaño del texto general.
-TEXT_SIZE = 18
+# =============================================================================
+# COMPONENTES
+# =============================================================================
+
+PROMPT_HEIGHT = 68
+COMPACT_PROMPT_HEIGHT = 58
+
+PROMPT_RADIUS = 25
+BUTTON_RADIUS = 20
+
+TOUCH_TARGET_SIZE = 48
