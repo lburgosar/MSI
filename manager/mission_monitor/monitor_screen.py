@@ -18,6 +18,7 @@ import pygame
 
 import theme
 from live_state_reader import LiveStateReader
+from presentation.simulation_view import SimulationView
 
 
 class MonitorScreen:
@@ -51,6 +52,7 @@ class MonitorScreen:
     def __init__(self) -> None:
         self.state_reader = LiveStateReader()
         self.state = self.state_reader.read()
+        self.simulation_view = SimulationView()
 
         self.refresh_timer = 0.0
         self.refresh_interval = 0.20
@@ -202,6 +204,18 @@ class MonitorScreen:
             phase_code,
         )
 
+        drones = self.state.get("drones", [])
+        average_battery = (
+            sum(float(drone.get("battery_percent", 0.0)) for drone in drones) / len(drones)
+            if drones
+            else 0.0
+        )
+        average_speed = (
+            sum(float(drone.get("speed", 0.0)) for drone in drones) / len(drones)
+            if drones
+            else 0.0
+        )
+
         y += 68
 
         self.draw_section(
@@ -271,10 +285,16 @@ class MonitorScreen:
                         )
                     ),
                 ),
+                (
+                    "En vuelo",
+                    str(self.state.get("active_drones", 0)),
+                ),
+                ("Batería media", f"{average_battery:.0f} %" if drones else "—"),
+                ("Velocidad media", f"{average_speed:.2f} u/s" if drones else "—"),
             ],
         )
 
-        y += 142
+        y += 226
 
         self.draw_section(
             screen,
@@ -345,6 +365,10 @@ class MonitorScreen:
                     "Intervención",
                     intervention_text,
                 ),
+                (
+                    "Evento",
+                    self.state.get("latest_event", "—"),
+                ),
             ],
         )
 
@@ -412,6 +436,12 @@ class MonitorScreen:
             "idle",
         )
 
+        drones = self.state.get("drones", [])
+
+        if drones:
+            self.render_synoptic(screen, simulation_rect, drones)
+            return
+
         if status_code == "idle":
             title_text = "Sin misión activa"
             subtitle_text = (
@@ -473,3 +503,38 @@ class MonitorScreen:
                 )
             ),
         )
+
+    def render_synoptic(
+        self,
+        screen: pygame.Surface,
+        simulation_rect: pygame.Rect,
+        drones: list[dict[str, Any]],
+    ) -> None:
+        """Dibuja una vista operacional resumida, no una copia de Studio."""
+
+        margin = 42
+        viewport = simulation_rect.inflate(-margin * 2, -margin * 2)
+        pygame.draw.rect(screen, theme.PANEL, viewport, border_radius=22)
+        pygame.draw.rect(screen, theme.BORDER, viewport, width=1, border_radius=22)
+
+        title = self.section_font.render("VISTA SINÓPTICA DE MISIÓN", True, theme.SECONDARY_TEXT)
+        screen.blit(title, (viewport.left + 22, viewport.top + 18))
+
+        map_rect = pygame.Rect(
+            viewport.left + 34,
+            viewport.top + 62,
+            viewport.width - 68,
+            viewport.height - 98,
+        )
+
+        row_spacing = max(22, map_rect.height // 8)
+        for row_y in range(map_rect.top + row_spacing, map_rect.bottom, row_spacing):
+            pygame.draw.line(
+                screen,
+                (88, 116, 76),
+                (map_rect.left + 18, row_y),
+                (map_rect.right - 18, row_y),
+                width=3,
+            )
+
+        self.simulation_view.render(screen, map_rect, drones, interactive=False)

@@ -16,6 +16,7 @@ from __future__ import annotations
 import pygame
 
 from core import theme
+from presentation.simulation_view import SimulationView
 
 
 class VineyardScene:
@@ -30,6 +31,8 @@ class VineyardScene:
     ) -> None:
         self.location_name = location_name
         self.row_count = row_count
+        self.simulation_view = SimulationView()
+        self.drones: list[dict] = []
 
         self.title_font = pygame.font.SysFont(
             "Segoe UI",
@@ -43,11 +46,22 @@ class VineyardScene:
         )
 
     def update(self, delta_time: float) -> None:
-        """
-        La primera versión todavía no tiene movimiento.
-        """
+        """La escena no mueve recursos; sólo representa el estado recibido."""
 
-        return
+    def set_drones(self, drones: list[dict]) -> None:
+        self.drones = drones
+
+    def select_at(self, position: tuple[int, int]) -> str | None:
+        return self.simulation_view.select_at(position)
+
+    @staticmethod
+    def get_grid_rect(workspace_rect: pygame.Rect) -> pygame.Rect:
+        return pygame.Rect(
+            workspace_rect.left + 62,
+            workspace_rect.top + 60,
+            max(100, workspace_rect.width - 124),
+            max(100, workspace_rect.height - 105),
+        )
 
     def render(
         self,
@@ -87,12 +101,7 @@ class VineyardScene:
             ),
         )
 
-        grid_rect = pygame.Rect(
-            workspace_rect.left + 62,
-            workspace_rect.top + 60,
-            max(100, workspace_rect.width - 124),
-            max(100, workspace_rect.height - 105),
-        )
+        grid_rect = self.get_grid_rect(workspace_rect)
 
         # Cuadrícula de referencia para un mapa futuro.
         grid_step = max(
@@ -208,4 +217,11 @@ class VineyardScene:
                 - 18,
                 workspace_rect.bottom - 29,
             ),
+        )
+
+        self.simulation_view.render(
+            screen,
+            grid_rect,
+            self.drones,
+            interactive=True,
         )

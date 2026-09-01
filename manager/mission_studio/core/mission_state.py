@@ -34,6 +34,9 @@ class MissionState:
             "action": "",
             "location": "",
             "progress_percent": 0,
+            "drones": [],
+            "active_drones": 0,
+            "latest_event": "Esperando misión",
 
             # Valores simulados para la primera demo.
             # Luego vendrán del Capability Manager.
@@ -198,6 +201,7 @@ class MissionState:
                 "status": "running",
                 "phase": "execution",
                 "progress_percent": 0,
+                "latest_event": "Ejecución iniciada",
             }
         )
 
@@ -220,6 +224,8 @@ class MissionState:
                 "status": "completed",
                 "phase": "finished",
                 "progress_percent": 100,
+                "active_drones": 0,
+                "latest_event": "Objetivos alcanzados",
             }
         )
 

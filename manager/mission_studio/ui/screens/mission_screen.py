@@ -24,6 +24,7 @@ import pygame
 from core import layout
 from core import theme
 from core.mission_log import MissionLog
+from core.mission_runtime import MissionRuntime
 from core.mission_state import MissionState
 from scene.vineyard_scene import VineyardScene
 
@@ -47,6 +48,7 @@ class MissionScreen:
 
         self.next_screen: str | None = None
         self.mission_finished = False
+        self.execution_started = False
 
         (
             self.mission_action,
@@ -95,6 +97,15 @@ class MissionScreen:
         )
 
         self.mission_state.begin_planning()
+
+        self.mission_runtime = MissionRuntime(
+            mission_state=self.mission_state,
+            action=self.mission_action,
+            on_event=self.mission_log.add_event,
+        )
+        self.vineyard_scene.set_drones(
+            self.mission_runtime.engine.telemetry()
+        )
 
     @staticmethod
     def parse_mission_text(
@@ -193,7 +204,12 @@ class MissionScreen:
 
         if pointer is not None:
             if finish_rect.collidepoint(pointer):
-                self.finish_mission()
+                self.execute_mission()
+                return
+
+            workspace_rect = layout.get_workspace_rect(screen_width, screen_height)
+            if workspace_rect.collidepoint(pointer):
+                self.vineyard_scene.select_at(pointer)
                 return
 
             if self.mission_finished:
@@ -310,33 +326,17 @@ class MissionScreen:
 
         self.command_text = ""
 
-    def finish_mission(self) -> None:
+    def execute_mission(self) -> None:
         """
-        Finaliza la misión, genera el reporte y conserva el resultado
-        visible hasta que el operador presione Escape.
+        Envía el plan válido al runtime. El botón no decide movimiento.
         """
 
-        if self.mission_finished:
+        if not self.mission_runtime.plan_valid:
             return
 
-        self.mission_state.complete()
-
-        self.mission_log.finalize(
-            result="completed",
-        )
-
-        self.feedback_text = (
-            "Misión finalizada. El reporte fue guardado. "
-            "Presioná Esc para volver."
-        )
-
-        self.command_placeholder = (
-            "Misión finalizada · Presioná Esc para volver"
-        )
-
-        self.command_text = ""
-        self.input_focused = False
-        self.mission_finished = True
+        self.mission_runtime.start()
+        self.execution_started = True
+        self.feedback_text = "Misión en ejecución · 3 drones activos"
 
     def update(
         self,
@@ -346,8 +346,24 @@ class MissionScreen:
         Actualiza la escena mientras la misión está activa.
         """
 
-        if not self.mission_finished:
-            self.vineyard_scene.update(delta_time)
+        if self.mission_finished:
+            return
+
+        self.mission_runtime.update(delta_time)
+        self.vineyard_scene.set_drones(
+            self.mission_runtime.engine.telemetry()
+        )
+        self.vineyard_scene.update(delta_time)
+
+        if self.mission_runtime.completed:
+            self.mission_log.finalize(result="completed")
+            self.feedback_text = (
+                "Misión completada. Reporte guardado · Presioná Esc para volver."
+            )
+            self.command_placeholder = "Misión completada · Presioná Esc para volver"
+            self.command_text = ""
+            self.input_focused = False
+            self.mission_finished = True
 
     def render(
         self,
@@ -416,22 +432,18 @@ class MissionScreen:
         # BOTÓN DE FINALIZACIÓN
         # ---------------------------------------------------------------------
 
-        finish_background = (
-            theme.SUCCESS
-            if self.mission_finished
-            else theme.PANEL
+        finish_background = theme.SUCCESS if self.mission_finished else (
+            theme.PRIMARY if self.mission_runtime.plan_valid else theme.PANEL
         )
 
         finish_border = (
-            theme.SUCCESS
-            if self.mission_finished
-            else theme.BORDER
+            theme.SUCCESS if self.mission_finished else (
+                theme.PRIMARY if self.mission_runtime.plan_valid else theme.BORDER
+            )
         )
 
         finish_text_color = (
-            theme.PANEL
-            if self.mission_finished
-            else theme.TEXT
+            theme.PANEL if (self.mission_finished or self.mission_runtime.plan_valid) else theme.TEXT
         )
 
         pygame.draw.rect(
@@ -449,11 +461,12 @@ class MissionScreen:
             border_radius=theme.BUTTON_RADIUS,
         )
 
-        finish_label = (
-            "Misión completada"
-            if self.mission_finished
-            else "Finalizar misión"
-        )
+        if self.mission_finished:
+            finish_label = "Misión completada"
+        elif self.mission_runtime.plan_valid:
+            finish_label = "Ejecutar misión"
+        else:
+            finish_label = "En ejecución"
 
         finish_text = self.small_font.render(
             finish_label,
