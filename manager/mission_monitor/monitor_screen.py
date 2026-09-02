@@ -297,7 +297,7 @@ class MonitorScreen:
             screen.blit(detail, (x, y))
             y += 22
             sensors = selected.get("sensors", [])
-            feed_rect = pygame.Rect(x, y, panel.width - 26, min(76, max(45, panel.height // 4)))
+            feed_rect = pygame.Rect(x, y, panel.width - 26, min(60, max(42, panel.height // 5)))
             pygame.draw.rect(screen, (35, 44, 47), feed_rect, border_radius=10)
             sensor_type = sensors[0].get("sensor_type", "NO SENSOR") if sensors else "NO SENSOR"
             sensor_label = self.small_font.render(str(sensor_type).upper(), True, (210, 225, 221))
@@ -310,23 +310,47 @@ class MonitorScreen:
                 )
             y = feed_rect.bottom + 10
 
+        decisions = list(self.state.get("decisions", []))
+        if decisions:
+            decision = decisions[-1]
+            decision_rect = pygame.Rect(x, y, panel.width - 26, 61)
+            pygame.draw.rect(screen, (241, 247, 255), decision_rect, border_radius=10)
+            pygame.draw.rect(screen, (181, 211, 244), decision_rect, width=1, border_radius=10)
+            action = self.small_font.render(
+                f"MSI · {str(decision.get('selected_action', '')).replace('_', ' ').upper()}",
+                True,
+                theme.PRIMARY,
+            )
+            screen.blit(action, (decision_rect.left + 9, decision_rect.top + 6))
+            reason = self.fit_text(str(decision.get("reason", "")), decision_rect.width - 18)
+            impact = self.fit_text(str(decision.get("impact", "")), decision_rect.width - 18)
+            screen.blit(self.small_font.render(reason, True, theme.TEXT), (decision_rect.left + 9, decision_rect.top + 24))
+            screen.blit(
+                self.small_font.render(impact, True, theme.SECONDARY_TEXT),
+                (decision_rect.left + 9, decision_rect.top + 41),
+            )
+            y = decision_rect.bottom + 8
+
         timeline_title = self.section_font.render("DECISIONES / EVENTOS", True, theme.SECONDARY_TEXT)
         screen.blit(timeline_title, (x, y))
         y += 21
-        available_rows = max(1, (panel.bottom - y - 8) // 34)
-        events = list(self.state.get("events", []))[-available_rows:]
+        available_rows = max(0, (panel.bottom - y - 8) // 34)
+        events = list(self.state.get("events", []))[-available_rows:] if available_rows else []
         for event in reversed(events):
             event_type = str(event.get("event_type", "event")).upper()
             summary = str(event.get("summary", ""))
             type_surface = self.small_font.render(event_type, True, theme.PRIMARY)
             screen.blit(type_surface, (x, y))
-            clipped = summary
-            max_width = panel.width - 30
-            while self.small_font.size(clipped)[0] > max_width and len(clipped) > 3:
-                clipped = clipped[:-4] + "..."
+            clipped = self.fit_text(summary, panel.width - 30)
             summary_surface = self.small_font.render(clipped, True, theme.TEXT)
             screen.blit(summary_surface, (x, y + 14))
             y += 34
+
+    def fit_text(self, text: str, max_width: int) -> str:
+        clipped = text
+        while self.small_font.size(clipped)[0] > max_width and len(clipped) > 3:
+            clipped = clipped[:-4] + "..."
+        return clipped
 
     def render_compact(
         self,
