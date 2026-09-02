@@ -16,6 +16,7 @@ los datos.
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +52,7 @@ class LiveStatePublisher:
     def publish(
         self,
         state: dict[str, Any],
-    ) -> None:
+    ) -> bool:
         """
         Publica el estado mediante escritura atómica.
 
@@ -59,21 +60,21 @@ class LiveStatePublisher:
         Así el monitor no intenta leer un archivo incompleto.
         """
 
-        temporary_file = self.state_file.with_suffix(
-            ".tmp"
-        )
+        temporary_file = self.state_file.with_suffix(".tmp")
 
-        with temporary_file.open(
-            "w",
-            encoding="utf-8",
-        ) as file:
-            json.dump(
-                state,
-                file,
-                ensure_ascii=False,
-                indent=4,
-            )
+        # Windows puede impedir durante unos milisegundos el reemplazo si
+        # Mission Monitor o OneDrive mantienen abierto el archivo anterior.
+        # Perder una muestra de telemetría es preferible a cerrar la HMI; la
+        # siguiente publicación llegará como máximo 100 ms después.
+        for attempt in range(8):
+            try:
+                with temporary_file.open("w", encoding="utf-8") as file:
+                    json.dump(state, file, ensure_ascii=False, indent=4)
 
-        temporary_file.replace(
-            self.state_file
-        )
+                temporary_file.replace(self.state_file)
+                return True
+            except OSError:
+                if attempt < 7:
+                    time.sleep(0.005)
+
+        return False
