@@ -62,6 +62,7 @@ class SplashScreen:
         """
 
         screen.fill(theme.BACKGROUND)
+        screen_width, screen_height = screen.get_size()
 
         title = self.title_font.render(
             "MSI",
@@ -85,8 +86,8 @@ class SplashScreen:
             title,
             title.get_rect(
                 center=(
-                    theme.WINDOW_WIDTH // 2,
-                    theme.WINDOW_HEIGHT // 2 - 55,
+                    screen_width // 2,
+                    screen_height // 2 - 55,
                 )
             ),
         )
@@ -95,8 +96,8 @@ class SplashScreen:
             product,
             product.get_rect(
                 center=(
-                    theme.WINDOW_WIDTH // 2,
-                    theme.WINDOW_HEIGHT // 2 + 10,
+                    screen_width // 2,
+                    screen_height // 2 + 10,
                 )
             ),
         )
@@ -105,8 +106,8 @@ class SplashScreen:
             description,
             description.get_rect(
                 center=(
-                    theme.WINDOW_WIDTH // 2,
-                    theme.WINDOW_HEIGHT // 2 + 55,
+                    screen_width // 2,
+                    screen_height // 2 + 55,
                 )
             ),
         )

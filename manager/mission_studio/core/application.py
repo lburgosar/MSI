@@ -19,6 +19,8 @@ Responsabilidades:
 
 from __future__ import annotations
 
+import os
+
 import pygame
 
 from core import theme
@@ -33,10 +35,13 @@ class MissionStudio:
     def __init__(self) -> None:
         pygame.init()
 
+        window_width = int(os.environ.get("MSI_WINDOW_WIDTH", theme.WINDOW_WIDTH))
+        window_height = int(os.environ.get("MSI_WINDOW_HEIGHT", theme.WINDOW_HEIGHT))
+
         self.screen = pygame.display.set_mode(
             (
-                theme.WINDOW_WIDTH,
-                theme.WINDOW_HEIGHT,
+                window_width,
+                window_height,
             ),
             pygame.RESIZABLE,
         )

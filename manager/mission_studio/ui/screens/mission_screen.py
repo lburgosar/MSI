@@ -188,6 +188,7 @@ class MissionScreen:
 
         finish_rect = layout.get_finish_button_rect(
             screen_width,
+            screen_height,
         )
 
         pointer = self.get_pointer_position(
@@ -379,6 +380,7 @@ class MissionScreen:
 
         header_rect = layout.get_mission_header_rect(
             screen_width,
+            screen_height,
         )
 
         workspace_rect = layout.get_workspace_rect(
@@ -393,6 +395,7 @@ class MissionScreen:
 
         finish_rect = layout.get_finish_button_rect(
             screen_width,
+            screen_height,
         )
 
         # ---------------------------------------------------------------------

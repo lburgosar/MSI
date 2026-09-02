@@ -90,6 +90,7 @@ def get_home_question_y(screen_height: int) -> int:
 
 def get_mission_header_rect(
     screen_width: int,
+    screen_height: int,
 ) -> pygame.Rect:
     """
     Área superior de información de la misión.
@@ -97,11 +98,13 @@ def get_mission_header_rect(
 
     margin = get_horizontal_margin(screen_width)
 
+    compact = screen_height < 560
+
     return pygame.Rect(
         margin,
-        24,
+        12 if compact else 24,
         screen_width - margin * 2,
-        104,
+        82 if compact else 104,
     )
 
 
@@ -118,14 +121,15 @@ def get_workspace_rect(
     mode = get_layout_mode(screen_width)
     margin = get_horizontal_margin(screen_width)
 
-    top = 145
+    compact_height = screen_height < 560
+    top = 102 if compact_height else 145
 
     if mode == "mobile":
         bottom_reserved = 110
         workspace_margin = 14
 
     else:
-        bottom_reserved = 100
+        bottom_reserved = 88 if compact_height else 100
         workspace_margin = margin
 
     return pygame.Rect(
@@ -194,6 +198,7 @@ def get_plus_button_rect(prompt_rect: pygame.Rect) -> pygame.Rect:
 
 def get_finish_button_rect(
     screen_width: int,
+    screen_height: int,
 ) -> pygame.Rect:
     """
     Botón táctil para finalizar una misión.
@@ -203,7 +208,7 @@ def get_finish_button_rect(
 
     return pygame.Rect(
         screen_width - margin - 150,
-        36,
+        20 if screen_height < 560 else 36,
         150,
         44,
     )

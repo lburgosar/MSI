@@ -114,6 +114,10 @@ class MonitorScreen:
 
         width, height = screen.get_size()
 
+        if height < 520:
+            self.render_compact(screen, pygame.Rect(0, 0, width, height))
+            return
+
         sidebar_width = int(
             width * theme.SIDEBAR_RATIO
         )
@@ -163,6 +167,53 @@ class MonitorScreen:
             screen,
             simulation_rect,
         )
+
+    def render_compact(
+        self,
+        screen: pygame.Surface,
+        window_rect: pygame.Rect,
+    ) -> None:
+        """Layout horizontal para Monitor cuando comparte una pantalla baja."""
+
+        header_height = 76
+        pygame.draw.rect(screen, theme.PANEL, (0, 0, window_rect.width, header_height))
+        pygame.draw.line(
+            screen,
+            theme.BORDER,
+            (0, header_height),
+            (window_rect.width, header_height),
+        )
+
+        status_code = self.state.get("status", "idle")
+        status_label = self.STATUS_LABELS.get(status_code, status_code)
+        progress = self.state.get("progress_percent", 0)
+        active = self.state.get("active_drones", 0)
+        drones = self.state.get("drones", [])
+        average_battery = (
+            sum(float(drone.get("battery_percent", 0.0)) for drone in drones) / len(drones)
+            if drones
+            else 0.0
+        )
+
+        title = self.title_font.render("MSI Mission Monitor", True, theme.TEXT)
+        screen.blit(title, (22, 12))
+        summary = self.text_font.render(
+            f"{status_label}   ·   Progreso {progress}%   ·   En vuelo {active}   ·   Batería {average_battery:.0f}%",
+            True,
+            theme.SECONDARY_TEXT,
+        )
+        screen.blit(summary, (22, 45))
+
+        event_text = self.state.get("latest_event", "Esperando misión")
+        event = self.text_font.render(str(event_text), True, theme.TEXT)
+        screen.blit(event, (window_rect.right - event.get_width() - 24, 28))
+
+        content_rect = pygame.Rect(0, header_height, window_rect.width, window_rect.height - header_height)
+        if drones:
+            self.render_synoptic(screen, content_rect, drones, compact=True)
+        else:
+            waiting = self.text_font.render("Esperando una nueva misión desde Studio", True, theme.SECONDARY_TEXT)
+            screen.blit(waiting, waiting.get_rect(center=content_rect.center))
 
     def render_sidebar(
         self,
@@ -509,22 +560,25 @@ class MonitorScreen:
         screen: pygame.Surface,
         simulation_rect: pygame.Rect,
         drones: list[dict[str, Any]],
+        compact: bool = False,
     ) -> None:
         """Dibuja una vista operacional resumida, no una copia de Studio."""
 
-        margin = 42
+        margin = 10 if compact else 42
         viewport = simulation_rect.inflate(-margin * 2, -margin * 2)
         pygame.draw.rect(screen, theme.PANEL, viewport, border_radius=22)
         pygame.draw.rect(screen, theme.BORDER, viewport, width=1, border_radius=22)
 
-        title = self.section_font.render("VISTA SINÓPTICA DE MISIÓN", True, theme.SECONDARY_TEXT)
-        screen.blit(title, (viewport.left + 22, viewport.top + 18))
+        title_height = 0 if compact else 40
+        if not compact:
+            title = self.section_font.render("VISTA SINÓPTICA DE MISIÓN", True, theme.SECONDARY_TEXT)
+            screen.blit(title, (viewport.left + 22, viewport.top + 18))
 
         map_rect = pygame.Rect(
             viewport.left + 34,
-            viewport.top + 62,
+            viewport.top + 12 + title_height,
             viewport.width - 68,
-            viewport.height - 98,
+            viewport.height - 24 - title_height,
         )
 
         row_spacing = max(22, map_rect.height // 8)
