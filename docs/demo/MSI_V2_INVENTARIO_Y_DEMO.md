@@ -1,7 +1,7 @@
 # MSI Simulator V2 — Inventario funcional y demo canónica
 
 Fecha de auditoría: 2026-09-02  
-Base auditada: `main` después de `42a3f92` y del ajuste de feedback BLOCKED incluido en esta entrega.
+Base auditada: MSI V2.1, después de los checkpoints nocturnos de explicabilidad y visualización operacional.
 
 ## Convenciones de estado
 
@@ -278,7 +278,7 @@ Errores de ID, formato, número, consumible o comando se muestran como `No pude 
 ## L. Tests y Git
 
 - Runner: `manager\\mission_studio\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v`
-- Resultado antes del commit final: **35 tests OK**.
+- Resultado V2.1 antes del commit final: **42 tests OK**.
 - Cobertura funcional: layout, recursos, mapa, preflight, planners, runtime, decisiones, simulación, transporte, trace, publicación atómica y workflow UI.
 - El hash final y estado de push se informan en el mensaje de entrega después de crear el commit.
 
@@ -289,3 +289,29 @@ Errores de ID, formato, número, consumible o comando se muestran como `No pude 
 - [Monitor con pausa y decisión](assets/monitor_spraying_pause_decision.png): estado y timeline sincronizados.
 - [Patrulla con anomalía](assets/studio_patrol_anomaly.png): patrón de patrulla y desvío térmico.
 - [Respuesta de emergencia](assets/studio_emergency_priority.png): geometría y nuevo foco prioritario.
+
+## N. Actualización MSI V2.1
+
+- Preflight publica un modelo explicable compartido: disponibles, compatibles, asignados, energía, producto, viento, valores requeridos y alternativas factibles.
+- Cada recurso publica rol, compatibilidad, asignación, tarea y sector; Studio y Monitor consumen la misma semántica.
+- Scenario Control está rotulado como simulación, muestra valor actual → inyectado y el recurso afectado; expone viento/restauración, producto, batería, enlace, sensor, retiro y anomalía según contexto.
+- Monitor presenta decisiones como CONDITION → EVALUATION → DECISION → IMPACT → ACTION.
+- Spraying muestra hileras, sectores, cobertura simplificada, trayectoria completada con mayor peso y pendiente más fina.
+- Patrol muestra sectores de reconocimiento térmico/RGB-relay y contexto de barrido; selecciona D3 asignado al abrir.
+- Emergency muestra objetivo prioritario y recursos heterogéneos; selecciona D3 asignado al abrir.
+- Feeds RGB, thermal y multispectral siguen siendo sintéticos y están marcados `SIMULATED SENSOR DATA`.
+- COMPLETED publica `mission_summary` con duración simulada, cobertura, producto usado/restante, recursos, decisiones, replans, pausas, incidentes y disponibilidad de trace.
+- Trace JSONL registra un `outcome` reconstruible al completar.
+- Dirección de viento es telemetría en el planner simplificado: no incrementa por sí sola `plan_version`.
+
+Evidencia V2.1:
+
+- [Preflight explicable](assets/v21-preflight-studio.png)
+- [Scenario Control compacto](assets/v21-scenario-control-compact.png)
+- [Scenario Control en Studio](assets/v21-scenario-control-studio.png)
+- [Narrativa de decisión en Monitor](assets/v21-decision-narrative-monitor.png)
+- [Spraying operacional](assets/v21-spraying-operation.png)
+- [Patrol operacional](assets/v21-patrol-operation.png)
+- [Emergency operacional](assets/v21-emergency-operation.png)
+- [Mission Summary en Studio](assets/v21-mission-summary-studio.png)
+- [Mission Summary en Monitor](assets/v21-mission-summary-monitor.png)

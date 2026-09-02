@@ -147,9 +147,20 @@ class RuntimeV2DecisionTests(unittest.TestCase):
 
     def test_pre_execution_wind_change_recomputes_preflight_instead_of_pausing(self) -> None:
         runtime = self.runtime()
+        original_version = runtime.plan.version
         ScenarioEngine(runtime).set_wind(7.0)
         self.assertEqual(runtime.status, "blocked")
         self.assertFalse(runtime.paused)
+        self.assertEqual(runtime.plan.version, original_version + 1)
+
+    def test_wind_speed_and_direction_are_one_material_plan_change(self) -> None:
+        runtime = self.runtime()
+        original_version = runtime.plan.version
+
+        ScenarioEngine(runtime).set_wind(4.0, 180)
+
+        self.assertEqual(runtime.plan.version, original_version + 1)
+        self.assertEqual(runtime.environment["wind_direction_deg"], 180)
 
     def test_emergency_priority_event_diverts_specialized_resource(self) -> None:
         runtime = self.runtime(MissionIntent.EMERGENCY_RESPONSE)

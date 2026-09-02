@@ -205,7 +205,12 @@ class MissionRuntimeV2:
             self.configuration.parameters[condition] = float(value)
             event = self._event("condition", f"{condition} cambió a {value}", data={condition: value})
             if self.status not in {"running", "paused"}:
-                self.plan_mission()
+                # Wind speed changes viability; direction is telemetry-only in
+                # the current simplified planner and must not create a fake plan.
+                if condition == "wind_m_s":
+                    self.plan_mission()
+                else:
+                    self.publish()
                 return
             if condition == "wind_m_s" and self.configuration.intent is MissionIntent.PRECISION_SPRAYING:
                 limit = float(self.configuration.parameters.get("max_wind_m_s", 0.0))
@@ -257,6 +262,8 @@ class MissionRuntimeV2:
             resource.communication.link_quality_percent = float(value)
             summary = f"{resource_id} enlace {float(value):.0f}%"
         elif condition == "sensor_failure":
+            if not any(sensor.sensor_id == value for sensor in resource.sensors):
+                raise ValueError(f"Unknown sensor {value} for {resource_id}")
             resource.sensors = [
                 type(sensor)(sensor.sensor_id, sensor.sensor_type, False, sensor.data_kind)
                 if sensor.sensor_id == value else sensor
