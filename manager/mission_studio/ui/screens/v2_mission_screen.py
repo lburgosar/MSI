@@ -114,7 +114,13 @@ class MissionScreen:
             if self.runtime.resume_if_valid():
                 self.feedback_text = "Condiciones válidas. MSI reanudó la misión."
             else:
-                self.feedback_text = "La restricción continúa activa; no es posible reanudar."
+                wind = self.runtime.environment["wind_m_s"]
+                limit = float(self.configuration.parameters.get("max_wind_m_s", 999.0))
+                self.feedback_text = (
+                    "REANUDACIÓN RECHAZADA · "
+                    f"Viento actual {wind:.1f} m/s · límite {limit:.1f} m/s. "
+                    "Esperar condiciones válidas o modificar la misión."
+                )
 
     def process_event(self, event: pygame.event.Event) -> None:
         screen = pygame.display.get_surface()
@@ -187,6 +193,7 @@ class MissionScreen:
             self.feedback_text = "Escribí una orden o un valor operacional."
             return
         tokens = command.replace(",", ".").split()
+        preserve_feedback = False
         try:
             keyword = tokens[0].lower()
             if keyword in {"autorizar", "ejecutar", "reanudar"}:
@@ -194,6 +201,11 @@ class MissionScreen:
             elif keyword == "wind" or keyword == "viento":
                 direction = float(tokens[2]) if len(tokens) > 2 else None
                 self.scenario.set_wind(float(tokens[1]), direction)
+                if self.runtime.paused and self.runtime.environment["wind_m_s"] <= float(
+                    self.configuration.parameters.get("max_wind_m_s", 999.0)
+                ):
+                    self.feedback_text = "CONDICIONES RESTABLECIDAS · Reanudar está disponible."
+                    preserve_feedback = True
             elif keyword in {"product", "producto"}:
                 self.scenario.set_product(tokens[1].upper(), float(tokens[2]))
             elif keyword in {"battery", "bateria"}:
@@ -210,7 +222,8 @@ class MissionScreen:
                 self.add_resource()
             else:
                 raise ValueError("Orden no reconocida")
-            self.feedback_text = f'Orden aplicada: "{command}"'
+            if not preserve_feedback:
+                self.feedback_text = f'Orden aplicada: "{command}"'
             self.mission_log.add_event("operator_command", command)
         except (ValueError, IndexError) as error:
             self.feedback_text = f"No pude aplicar la orden: {error}"
@@ -235,7 +248,7 @@ class MissionScreen:
             self.runtime.plan_mission()
 
     def add_resource(self) -> None:
-        existing = self.provider.list_resources()
+        existing = self.provider.list_catalog()
         template = deepcopy(existing[0])
         numbers = [int(item.resource_id[1:]) for item in existing if item.resource_id.startswith("D")]
         template.resource_id = f"D{max(numbers, default=0) + 1}"

@@ -50,9 +50,46 @@ class RuntimeV2DecisionTests(unittest.TestCase):
 
         self.assertEqual(runtime.status, "paused")
         self.assertEqual(runtime.decisions[-1].selected_action, "pause_mission")
+        self.assertFalse(runtime.resume_if_valid())
+        self.assertEqual(runtime.status, "paused")
+        self.assertEqual(runtime.events[-1].event_type, "resume_rejected")
+        self.assertIn("7.1 m/s", runtime.events[-1].summary)
         scenario.set_wind(3.0, 240)
+        self.assertTrue(any(
+            event.event_type == "conditions_restored" for event in runtime.events[-2:]
+        ))
+        self.assertTrue(runtime.snapshot()["resume_allowed"])
         self.assertTrue(runtime.resume_if_valid())
         self.assertEqual(runtime.status, "running")
+
+    def test_resource_identity_is_stable_across_replans_and_withdrawals(self) -> None:
+        runtime = self.runtime()
+        provider = runtime.resource_provider
+
+        self.assertEqual([item.resource_id for item in provider.list_resources()], ["D1", "D2", "D3", "D4"])
+        for _ in range(10):
+            runtime.plan_mission()
+        self.assertEqual([item.resource_id for item in provider.list_resources()], ["D1", "D2", "D3", "D4"])
+
+        provider.withdraw_resource("D4")
+        for _ in range(10):
+            runtime.plan_mission()
+        self.assertEqual([item.resource_id for item in provider.list_resources()], ["D1", "D2", "D3"])
+
+        provider.withdraw_resource("D3")
+        runtime.plan_mission()
+        active_ids = [item.resource_id for item in provider.list_resources()]
+        self.assertEqual(active_ids, ["D1", "D2"])
+        self.assertEqual(len(active_ids), len(set(active_ids)))
+        assigned_ids = {
+            task.assigned_resource_id for task in runtime.plan.tasks if task.assigned_resource_id
+        }
+        self.assertEqual(assigned_ids, set(active_ids))
+        self.assertEqual(len(runtime.snapshot()["resources"]), len(active_ids))
+        self.assertEqual(
+            {item.resource_id for item in provider.list_catalog()},
+            {"D1", "D2", "D3", "D4"},
+        )
 
     def test_patrol_anomaly_diverts_thermal_resource(self) -> None:
         runtime = self.runtime(MissionIntent.AUTONOMOUS_PATROL)

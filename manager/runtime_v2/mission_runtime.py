@@ -205,6 +205,13 @@ class MissionRuntimeV2:
                 limit = float(self.configuration.parameters.get("max_wind_m_s", 0.0))
                 if float(value) > limit:
                     self._apply_decision(self.decision_engine.wind_decision(event, limit))
+                elif self.paused:
+                    self._event(
+                        "conditions_restored",
+                        f"Condiciones restablecidas: viento {float(value):.1f} m/s; "
+                        f"límite {limit:.1f} m/s. Reanudación disponible.",
+                        data={"wind_m_s": float(value), "limit_m_s": limit},
+                    )
             self.publish()
             return
 
@@ -355,6 +362,13 @@ class MissionRuntimeV2:
             return False
         limit = float(self.configuration.parameters.get("max_wind_m_s", 999.0))
         if self.environment["wind_m_s"] > limit:
+            wind = self.environment["wind_m_s"]
+            self._event(
+                "resume_rejected",
+                f"Reanudación rechazada: viento actual {wind:.1f} m/s; límite {limit:.1f} m/s.",
+                data={"wind_m_s": wind, "limit_m_s": limit, "reason": "wind_above_limit"},
+            )
+            self.publish()
             return False
         self.paused = False
         self.status = "running"
@@ -388,6 +402,8 @@ class MissionRuntimeV2:
             x, y = self.map_provider.world_to_map(resource.position)
             resource_snapshot["map_position"] = {"x": x, "y": y}
         drones = self.simulation.telemetry() if self.simulation else []
+        wind_limit = float(self.configuration.parameters.get("max_wind_m_s", 999.0))
+        resume_allowed = self.paused and self.environment["wind_m_s"] <= wind_limit
         return {
             "schema_version": 2,
             "mode": self.resource_provider.mode,
@@ -399,6 +415,11 @@ class MissionRuntimeV2:
             "phase": self.phase,
             "progress_percent": self.progress_percent(),
             "authorized": self.authorized,
+            "resume_allowed": resume_allowed,
+            "resume_block_reason": (
+                "" if resume_allowed or not self.paused else
+                f"Viento {self.environment['wind_m_s']:.1f} m/s > límite {wind_limit:.1f} m/s"
+            ),
             "preflight": to_primitive(self.preflight),
             "plan": to_primitive(self.plan),
             "resources": resource_snapshots,

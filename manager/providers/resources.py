@@ -12,6 +12,7 @@ class ResourceProvider(Protocol):
     mode: str
 
     def list_resources(self) -> list[Resource]: ...
+    def list_catalog(self) -> list[Resource]: ...
     def get_resource(self, resource_id: str) -> Resource: ...
     def add_resource(self, resource: Resource) -> None: ...
     def update_resource(self, resource: Resource) -> None: ...
@@ -25,6 +26,15 @@ class SimulatedResourceProvider:
         self._resources = {item.resource_id: deepcopy(item) for item in resources or []}
 
     def list_resources(self) -> list[Resource]:
+        """Return resources currently available to the operational model."""
+        return [
+            deepcopy(item)
+            for item in self._resources.values()
+            if item.availability is not Availability.WITHDRAWN
+        ]
+
+    def list_catalog(self) -> list[Resource]:
+        """Return persistent identities, including withdrawn audit records."""
         return [deepcopy(item) for item in self._resources.values()]
 
     def get_resource(self, resource_id: str) -> Resource:
@@ -49,6 +59,9 @@ class SimulatedResourceProvider:
         resource.selected = False
         self.update_resource(resource)
 
+    def active_ids(self) -> tuple[str, ...]:
+        return tuple(item.resource_id for item in self.list_resources())
+
 
 class LiveResourceProvider:
     """Contrato reservado para adaptadores de hardware; no conectado aún."""
@@ -72,3 +85,6 @@ class ReplayResourceProvider:
         if not self.snapshots:
             return []
         return deepcopy(self.snapshots[min(self.index, len(self.snapshots) - 1)])
+
+    def list_catalog(self) -> list[Resource]:
+        return self.list_resources()
