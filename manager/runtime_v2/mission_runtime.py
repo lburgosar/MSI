@@ -63,6 +63,8 @@ class MissionRuntimeV2:
         self.authorized = False
         self.paused = False
         self.publish_timer = 0.0
+        self.execution_elapsed_seconds = 0.0
+        self._outcome_recorded = False
         self.initial_product: dict[str, float] = {}
         if self.trace_recorder:
             self.trace_recorder.record("mission_configuration", configuration)
@@ -144,6 +146,7 @@ class MissionRuntimeV2:
         if self.status != "running" or self.paused or self.simulation is None:
             return
         self.simulation.update(delta_time)
+        self.execution_elapsed_seconds += delta_time
         self._sync_operational_resources()
         self.publish_timer += delta_time
         if self.publish_timer >= 0.10:
@@ -163,6 +166,9 @@ class MissionRuntimeV2:
                 task.progress_percent = 100.0
             self._event("result", "Todos los objetivos del plan fueron completados")
             self.publish()
+            if self.trace_recorder and not self._outcome_recorded:
+                self.trace_recorder.record("outcome", self.mission_summary())
+                self._outcome_recorded = True
 
     def _sync_operational_resources(self) -> None:
         if self.simulation is None or self.plan is None:
@@ -470,6 +476,38 @@ class MissionRuntimeV2:
             "result": "MISIÓN VIABLE" if self.preflight and self.preflight.status is PreflightStatus.READY else "INTERVENCIÓN REQUERIDA",
         }
 
+    def mission_summary(self) -> dict[str, object]:
+        """Outcome metrics derived only from the current simplified model."""
+        progress = self.progress_percent()
+        active_resources = self.resource_provider.list_resources()
+        catalog = (
+            self.resource_provider.list_catalog()
+            if hasattr(self.resource_provider, "list_catalog") else active_resources
+        )
+        current_product = sum(
+            item.consumable.remaining_l for item in catalog if item.consumable is not None
+        )
+        initial_product = sum(self.initial_product.values())
+        resource_ids = sorted({
+            drone.drone_id for drone in self.simulation.drones.values()
+            if drone.assigned_task
+        }) if self.simulation else []
+        return {
+            "result": "COMPLETADA" if self.status == "completed" else self.status.upper(),
+            "model": "SIMULACIÓN OPERACIONAL SIMPLIFICADA",
+            "duration_seconds": round(self.execution_elapsed_seconds, 1),
+            "progress_percent": progress,
+            "coverage_hectares": round((self.plan.coverage_hectares if self.plan else 0.0) * progress / 100.0, 2),
+            "product_used_l": round(max(0.0, initial_product - current_product), 2),
+            "product_remaining_l": round(current_product, 2),
+            "resources_used": resource_ids,
+            "decision_count": len(self.decisions),
+            "replan_count": sum(event.event_type == "replan" for event in self.events),
+            "pause_count": sum(item.selected_action == "pause_mission" for item in self.decisions),
+            "incident_count": sum(event.event_type == "detection" for event in self.events),
+            "trace_available": self.trace_recorder is not None,
+        }
+
     def snapshot(self) -> dict[str, object]:
         resources = self.resource_provider.list_resources()
         resource_snapshots = to_primitive(resources)
@@ -565,6 +603,7 @@ class MissionRuntimeV2:
                 }
                 if self.decisions else None
             ),
+            "mission_summary": self.mission_summary(),
         }
 
     def publish(self) -> None:

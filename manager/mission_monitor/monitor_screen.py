@@ -354,8 +354,29 @@ class MonitorScreen:
                 y += 17
             y += 5
 
+        mission_summary = self.state.get("mission_summary", {})
+        if self.state.get("status") == "completed" and mission_summary:
+            summary_rect = pygame.Rect(x, y, panel.width - 26, 126)
+            pygame.draw.rect(screen, (237, 248, 241), summary_rect, border_radius=10)
+            pygame.draw.rect(screen, (153, 207, 170), summary_rect, width=1, border_radius=10)
+            title = self.section_font.render("MISSION SUMMARY · COMPLETADA", True, theme.SUCCESS)
+            screen.blit(title, (summary_rect.left + 9, summary_rect.top + 7))
+            resources = ", ".join(mission_summary.get("resources_used", [])) or "—"
+            rows = (
+                f"Cobertura: {mission_summary.get('coverage_hectares', 0)} ha · Progreso {mission_summary.get('progress_percent', 0)}% · Duración sim {mission_summary.get('duration_seconds', 0)} s",
+                f"Producto utilizado: {mission_summary.get('product_used_l', 0)} L · Restante {mission_summary.get('product_remaining_l', 0)} L",
+                f"Recursos: {resources}",
+                f"Decisiones {mission_summary.get('decision_count', 0)} · Replans {mission_summary.get('replan_count', 0)} · Pausas {mission_summary.get('pause_count', 0)}",
+                str(mission_summary.get("model", "")),
+            )
+            row_y = summary_rect.top + 28
+            for row in rows:
+                screen.blit(self.small_font.render(self.fit_text(row, summary_rect.width - 18), True, theme.TEXT), (summary_rect.left + 9, row_y))
+                row_y += 18
+            y = summary_rect.bottom + 8
+
         narrative = self.state.get("decision_narrative")
-        if narrative:
+        if narrative and self.state.get("status") != "completed":
             decision_rect = pygame.Rect(x, y, panel.width - 26, 112)
             pygame.draw.rect(screen, (241, 247, 255), decision_rect, border_radius=10)
             pygame.draw.rect(screen, (181, 211, 244), decision_rect, width=1, border_radius=10)

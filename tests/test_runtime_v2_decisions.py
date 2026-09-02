@@ -173,6 +173,13 @@ class RuntimeV2DecisionTests(unittest.TestCase):
         self.assertEqual(runtime.status, "completed")
         self.assertEqual(runtime.progress_percent(), 100)
         self.assertTrue(any(event.event_type == "result" for event in runtime.events))
+        summary = runtime.snapshot()["mission_summary"]
+        self.assertEqual(summary["result"], "COMPLETADA")
+        self.assertEqual(summary["coverage_hectares"], 3.6)
+        self.assertGreater(summary["duration_seconds"], 0)
+        self.assertGreaterEqual(summary["decision_count"], 1)
+        self.assertGreaterEqual(summary["replan_count"], 1)
+        self.assertEqual(summary["model"], "SIMULACIÓN OPERACIONAL SIMPLIFICADA")
 
 
 if __name__ == "__main__":

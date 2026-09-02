@@ -102,7 +102,7 @@ class MissionScreen:
         if self.runtime.status == "paused":
             return "Reanudar"
         if self.runtime.status == "completed":
-            return "Misión completada"
+            return "Nueva misión"
         if self.runtime.status == "blocked":
             return "Preflight bloqueado"
         return "En ejecución"
@@ -129,6 +129,8 @@ class MissionScreen:
                 )
         elif self.runtime.status == "blocked":
             self.feedback_text = self.preflight_feedback()
+        elif self.runtime.status == "completed":
+            self.next_screen = "home_from_mission"
 
     def preflight_feedback(self) -> str:
         if self.runtime.preflight is None or not self.runtime.preflight.findings:
@@ -422,6 +424,16 @@ class MissionScreen:
             x += button_width + 8
 
     def render_compact_preflight(self, screen: pygame.Surface, width: int) -> None:
+        if self.runtime.status == "completed":
+            summary = self.runtime.mission_summary()
+            line = (
+                f"RESULTADO {summary['result']} · COBERTURA {summary['coverage_hectares']} ha · "
+                f"RECURSOS {', '.join(summary['resources_used'])} · DECISIONES {summary['decision_count']} · "
+                f"REPLANS {summary['replan_count']} · MODELO SIMPLIFICADO"
+            )
+            text = self.small_font.render(line, True, theme.SUCCESS)
+            screen.blit(text, ((width - text.get_width()) // 2, 128))
+            return
         explanation = self.runtime.snapshot()["preflight_explanation"]
         checks = explanation["checks"]
         summary = "  ·  ".join(
@@ -496,6 +508,8 @@ class MissionScreen:
                 y += 17
 
     def scenario_actions(self) -> list[tuple[str, str]]:
+        if self.runtime.status == "completed":
+            return []
         if self.runtime.status not in {"running", "paused"}:
             return [
                 ("add", "+ Agregar recurso"),
