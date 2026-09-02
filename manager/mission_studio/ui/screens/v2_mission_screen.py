@@ -155,6 +155,7 @@ class MissionScreen:
             for resource_id, rect in self.resource_rects.items():
                 if rect.collidepoint(point):
                     self.selected_resource_id = resource_id
+                    self.map_view.simulation_view.selected_drone_id = resource_id
                     return
             if self.map_rect and self.map_rect.collidepoint(point):
                 selected = self.map_view.select_at(point)
@@ -171,6 +172,8 @@ class MissionScreen:
             resource = self.provider.get_resource(self.dragging_resource_id)
             resource.position = DEMO_BOUNDS.from_normalized(x, y, resource.position.altitude)
             self.provider.update_resource(resource)
+            if self.runtime.simulation and self.dragging_resource_id in self.runtime.simulation.drones:
+                self.runtime.simulation.drones[self.dragging_resource_id].position = (x, y)
 
         elif event.type == pygame.MOUSEBUTTONUP and self.dragging_resource_id:
             self.dragging_resource_id = None
@@ -197,6 +200,10 @@ class MissionScreen:
                 self.scenario.set_battery(tokens[1].upper(), float(tokens[2]))
             elif keyword in {"withdraw", "retirar"}:
                 self.scenario.withdraw(tokens[1].upper())
+            elif keyword == "link" or keyword == "enlace":
+                self.scenario.set_link_quality(tokens[1].upper(), float(tokens[2]))
+            elif keyword == "sensor":
+                self.scenario.fail_sensor(tokens[1].upper(), tokens[2])
             elif keyword in {"position", "posicion"}:
                 self.set_numeric_position(tokens[1].upper(), float(tokens[2]), float(tokens[3]), float(tokens[4]))
             elif keyword == "add" or keyword == "agregar":

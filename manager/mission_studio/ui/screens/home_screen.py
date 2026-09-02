@@ -91,7 +91,7 @@ class HomeScreen:
 
         self.feedback_text = (
             "Podés comenzar con: pulverizar, patrullar, "
-            "inspeccionar o recorrer."
+            "inspeccionar, emergencia o respuesta."
         )
 
         self.cursor_visible = True
@@ -264,7 +264,7 @@ class HomeScreen:
             self.feedback_text = (
                 "Puedo ayudarte a preparar una misión "
                 "de pulverización, patrullaje, "
-                "inspección o recorrido."
+                "inspección o respuesta de emergencia."
             )
 
             self.mission_state.set_decision(
@@ -285,7 +285,7 @@ class HomeScreen:
             self.feedback_text = (
                 "Todavía no reconozco esa misión. "
                 "Probá con pulverizar, patrullar, "
-                "inspeccionar o recorrer."
+                "inspeccionar o emergencia."
             )
 
             self.mission_state.set_decision(
@@ -349,7 +349,7 @@ class HomeScreen:
 
         self.feedback_text = (
             "Podés comenzar con: pulverizar, patrullar, "
-            "inspeccionar o recorrer."
+            "inspeccionar, emergencia o respuesta."
         )
 
         self.mission_state = MissionState()

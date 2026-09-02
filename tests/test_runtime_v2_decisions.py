@@ -83,6 +83,22 @@ class RuntimeV2DecisionTests(unittest.TestCase):
         ScenarioEngine(runtime).inject_thermal_anomaly(-34.600, -58.399)
         self.assertEqual(runtime.simulation.drones["D3"].assigned_task, "THERMAL-CONFIRM")  # type: ignore[union-attr]
 
+    def test_spraying_completes_after_real_route_reassignment(self) -> None:
+        runtime = self.runtime()
+        runtime.authorize()
+        runtime.start()
+        runtime.update(2.0)
+        ScenarioEngine(runtime).set_product("D1", 1.0)
+
+        for _ in range(2500):
+            runtime.update(0.2)
+            if runtime.status == "completed":
+                break
+
+        self.assertEqual(runtime.status, "completed")
+        self.assertEqual(runtime.progress_percent(), 100)
+        self.assertTrue(any(event.event_type == "result" for event in runtime.events))
+
 
 if __name__ == "__main__":
     unittest.main()
