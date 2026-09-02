@@ -244,19 +244,34 @@ class MissionScreen:
 
     def apply_scenario_action(self, action: str) -> None:
         resource_id = self.selected_resource_id
-        if action == "wind":
-            self.scenario.set_wind(7.2, 265)
-        elif action == "product":
-            self.scenario.set_product(resource_id, 1.0)
-        elif action == "battery":
-            self.scenario.set_battery(resource_id, 18.0)
-        elif action == "withdraw":
-            self.scenario.withdraw(resource_id)
-        elif action == "anomaly":
-            self.scenario.inject_thermal_anomaly(-34.601, -58.398)
-        elif action == "add":
-            self.add_resource()
-        self.feedback_text = f"Scenario Control aplicó: {action}"
+        try:
+            if action == "wind":
+                self.scenario.set_wind(7.2, 265)
+            elif action == "product":
+                self.scenario.set_product(resource_id, 1.0)
+            elif action == "battery":
+                self.scenario.set_battery(resource_id, 18.0)
+            elif action in {"withdraw", "remove"}:
+                self.scenario.withdraw(resource_id)
+            elif action == "disable":
+                resource = self.provider.get_resource(resource_id)
+                resource.availability = Availability.DISABLED
+                resource.selected = False
+                self.provider.update_resource(resource)
+                self.runtime.plan_mission()
+            elif action == "enable":
+                resource = self.provider.get_resource(resource_id)
+                resource.availability = Availability.AVAILABLE
+                resource.selected = True
+                self.provider.update_resource(resource)
+                self.runtime.plan_mission()
+            elif action == "anomaly":
+                self.scenario.inject_thermal_anomaly(-34.601, -58.398)
+            elif action == "add":
+                self.add_resource()
+            self.feedback_text = f"Scenario Control aplicó: {action}"
+        except ValueError as error:
+            self.feedback_text = f"No se pudo aplicar {action}: {error}"
 
     def update(self, delta_time: float) -> None:
         self.runtime.update(delta_time)
@@ -390,9 +405,16 @@ class MissionScreen:
 
     def scenario_actions(self) -> list[tuple[str, str]]:
         if self.runtime.status not in {"running", "paused"}:
-            return [("add", "+ Agregar recurso")]
+            return [
+                ("add", "+ Agregar recurso"),
+                ("disable", "Desactivar seleccionado"),
+                ("enable", "Activar seleccionado"),
+                ("remove", "Retirar seleccionado"),
+            ]
         if self.intent is MissionIntent.AUTONOMOUS_PATROL:
             return [("anomaly", "Anomalía térmica"), ("battery", "Batería 18%"), ("withdraw", "Retirar seleccionado")]
+        if self.intent is MissionIntent.EMERGENCY_RESPONSE:
+            return [("anomaly", "Nuevo foco prioritario"), ("battery", "Batería 18%"), ("withdraw", "Retirar seleccionado")]
         return [
             ("wind", "Viento 7.2 m/s"),
             ("product", "Producto 1 L"),

@@ -22,6 +22,7 @@ from planning.planners import MissionPlanner
 from planning.preflight import PreflightService
 from providers.resources import ResourceProvider
 from simulation.engine import DroneCommand, SimulatedDrone, SimulationEngine
+from maps.providers import LocalMapProvider, MapProvider
 from traceability.recorder import OperationalTraceRecorder
 from transport.channels import OperationalStatePublisher
 
@@ -37,11 +38,13 @@ class MissionRuntimeV2:
         resource_provider: ResourceProvider,
         state_publisher: OperationalStatePublisher | None = None,
         trace_recorder: OperationalTraceRecorder | None = None,
+        map_provider: MapProvider | None = None,
     ) -> None:
         self.configuration = configuration
         self.resource_provider = resource_provider
         self.state_publisher = state_publisher
         self.trace_recorder = trace_recorder
+        self.map_provider = map_provider or LocalMapProvider(DEMO_BOUNDS)
         self.planner_service = MissionPlanner()
         self.preflight_service = PreflightService()
         self.decision_engine = DecisionEngine()
@@ -88,7 +91,7 @@ class MissionRuntimeV2:
         for resource in resources:
             if resource.resource_id not in assigned_ids:
                 continue
-            position = DEMO_BOUNDS.to_normalized(resource.position)
+            position = self.map_provider.world_to_map(resource.position)
             drones.append(SimulatedDrone(
                 drone_id=resource.resource_id,
                 position=position,
@@ -103,7 +106,7 @@ class MissionRuntimeV2:
             drone = self.simulation.drones.get(task.assigned_resource_id or "")
             if drone is None or not task.route:
                 continue
-            route = [DEMO_BOUNDS.to_normalized(point) for point in task.route]
+            route = [self.map_provider.world_to_map(point) for point in task.route]
             drone.assigned_task = task.task_id
             drone.route = route
             drone.target = route[0]
@@ -126,7 +129,7 @@ class MissionRuntimeV2:
             return False
         commands = []
         for task in self.plan.tasks:
-            route = tuple(DEMO_BOUNDS.to_normalized(point) for point in task.route)
+            route = tuple(self.map_provider.world_to_map(point) for point in task.route)
             if task.assigned_resource_id and route:
                 commands.append(DroneCommand(task.assigned_resource_id, route[0], task.task_id, route))
                 task.status = "executing"
@@ -195,6 +198,9 @@ class MissionRuntimeV2:
             self.environment[condition] = float(value)
             self.configuration.parameters[condition] = float(value)
             event = self._event("condition", f"{condition} cambió a {value}", data={condition: value})
+            if self.status not in {"running", "paused"}:
+                self.plan_mission()
+                return
             if condition == "wind_m_s" and self.configuration.intent is MissionIntent.PRECISION_SPRAYING:
                 limit = float(self.configuration.parameters.get("max_wind_m_s", 0.0))
                 if float(value) > limit:
@@ -214,7 +220,10 @@ class MissionRuntimeV2:
             )
             decision = self.decision_engine.patrol_anomaly(event, thermal.resource_id if thermal else None)
             self._apply_decision(decision)
-            if thermal and self.configuration.intent is MissionIntent.AUTONOMOUS_PATROL:
+            if thermal and self.configuration.intent in {
+                MissionIntent.AUTONOMOUS_PATROL,
+                MissionIntent.EMERGENCY_RESPONSE,
+            }:
                 self._divert_to_anomaly(thermal.resource_id, float(latitude), float(longitude))
             self.publish()
             return
@@ -250,6 +259,9 @@ class MissionRuntimeV2:
             raise ValueError(f"Unsupported condition: {condition}")
         self.resource_provider.update_resource(resource)
         event = self._event("condition", summary, resource_id)
+        if self.status not in {"running", "paused"}:
+            self.plan_mission()
+            return
         if condition in {"battery_percent", "product_remaining_l", "withdraw_resource"}:
             threshold_hit = (
                 condition == "withdraw_resource"
@@ -285,7 +297,7 @@ class MissionRuntimeV2:
             if replacement_drone is None:
                 replacement_drone = SimulatedDrone(
                     replacement.resource_id,
-                    DEMO_BOUNDS.to_normalized(replacement.position),
+                    self.map_provider.world_to_map(replacement.position),
                     tuple(sorted(replacement.capabilities)),
                     battery_percent=replacement.energy.percent,
                 )
@@ -315,7 +327,7 @@ class MissionRuntimeV2:
             return
         center = GeoPoint(latitude, longitude, Altitude(35, AltitudeReference.AGL))
         offsets = ((0, -0.0007), (0.0007, 0), (0, 0.0007), (-0.0007, 0), (0, -0.0007))
-        route = tuple(DEMO_BOUNDS.to_normalized(GeoPoint(
+        route = tuple(self.map_provider.world_to_map(GeoPoint(
             center.latitude + dy, center.longitude + dx, center.altitude
         )) for dy, dx in offsets)
         if resource_id in self.simulation.drones:
@@ -373,7 +385,7 @@ class MissionRuntimeV2:
         resources = self.resource_provider.list_resources()
         resource_snapshots = to_primitive(resources)
         for resource, resource_snapshot in zip(resources, resource_snapshots):
-            x, y = DEMO_BOUNDS.to_normalized(resource.position)
+            x, y = self.map_provider.world_to_map(resource.position)
             resource_snapshot["map_position"] = {"x": x, "y": y}
         drones = self.simulation.telemetry() if self.simulation else []
         return {
@@ -402,7 +414,8 @@ class MissionRuntimeV2:
                 sum(item.communication.link_quality_percent for item in resources) / max(1, len(resources))
             ),
             "map": {
-                "bounds": to_primitive(DEMO_BOUNDS),
+                "bounds": to_primitive(self.map_provider.bounds),
+                **self.map_provider.descriptor(),
                 "operational_area": to_primitive(self.configuration.operational_area),
                 "geofence": to_primitive(self.configuration.geofence),
             },

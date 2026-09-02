@@ -70,6 +70,19 @@ class RuntimeV2DecisionTests(unittest.TestCase):
         self.assertEqual(snapshot["mode"], "simulation")
         self.assertEqual(len(snapshot["resources"]), 4)
 
+    def test_pre_execution_wind_change_recomputes_preflight_instead_of_pausing(self) -> None:
+        runtime = self.runtime()
+        ScenarioEngine(runtime).set_wind(7.0)
+        self.assertEqual(runtime.status, "blocked")
+        self.assertFalse(runtime.paused)
+
+    def test_emergency_priority_event_diverts_specialized_resource(self) -> None:
+        runtime = self.runtime(MissionIntent.EMERGENCY_RESPONSE)
+        runtime.authorize()
+        runtime.start()
+        ScenarioEngine(runtime).inject_thermal_anomaly(-34.600, -58.399)
+        self.assertEqual(runtime.simulation.drones["D3"].assigned_task, "THERMAL-CONFIRM")  # type: ignore[union-attr]
+
 
 if __name__ == "__main__":
     unittest.main()
