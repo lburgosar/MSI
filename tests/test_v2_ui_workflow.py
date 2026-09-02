@@ -51,6 +51,50 @@ class V2UiWorkflowTests(unittest.TestCase):
         self.assertAlmostEqual(resource.position.altitude.meters, 4.5)
         self.assertGreater(screen.runtime.plan.version, original_version)
 
+    def test_selected_resource_action_targets_selected_identity_only(self) -> None:
+        screen = MissionScreen("Pulverización · Las Marías", MissionState())
+        screen.selected_resource_id = "D3"
+        original_version = screen.runtime.plan.version
+
+        screen.apply_scenario_action("remove")
+
+        self.assertEqual(screen.provider.get_resource("D3").availability.value, "withdrawn")
+        self.assertEqual(screen.provider.get_resource("D1").availability.value, "available")
+        self.assertEqual(screen.runtime.plan.version, original_version + 1)
+
+    def test_selection_alone_does_not_increment_plan_version(self) -> None:
+        screen = MissionScreen("Pulverización · Las Marías", MissionState())
+        surface = pygame.Surface((1280, 800))
+        screen.render(surface)
+        original_version = screen.runtime.plan.version
+        d3_rect = screen.resource_rects["D3"]
+
+        screen.process_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=d3_rect.center))
+
+        self.assertEqual(screen.selected_resource_id, "D3")
+        self.assertEqual(screen.runtime.plan.version, original_version)
+
+    def test_blocked_preflight_exposes_real_finding_in_feedback(self) -> None:
+        screen = MissionScreen("Pulverización · Las Marías", MissionState())
+        screen.command_text = "viento 7.2 265"
+
+        screen.submit_command()
+
+        self.assertEqual(screen.runtime.status, "blocked")
+        self.assertIn("Viento fuera de restricción", screen.feedback_text)
+        self.assertIn("7.2 m/s", screen.feedback_text)
+
+    def test_rejected_resume_feedback_is_rendered_in_command_prompt(self) -> None:
+        screen = MissionScreen("Pulverización · Las Marías", MissionState())
+        screen.primary_action()
+        screen.primary_action()
+        screen.scenario.set_wind(7.2, 265)
+        screen.primary_action()
+
+        self.assertIn("REANUDACIÓN RECHAZADA", screen.feedback_text)
+        screen.render(pygame.Surface((1280, 800)))
+        self.assertFalse(screen.command_text)
+
 
 if __name__ == "__main__":
     unittest.main()

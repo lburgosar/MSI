@@ -121,6 +121,14 @@ class MissionScreen:
                     f"Viento actual {wind:.1f} m/s · límite {limit:.1f} m/s. "
                     "Esperar condiciones válidas o modificar la misión."
                 )
+        elif self.runtime.status == "blocked":
+            self.feedback_text = self.preflight_feedback()
+
+    def preflight_feedback(self) -> str:
+        if self.runtime.preflight is None or not self.runtime.preflight.findings:
+            return "PREFLIGHT BLOCKED · Sin detalle disponible."
+        finding = self.runtime.preflight.findings[0]
+        return f"PREFLIGHT {self.runtime.preflight.status.value.upper()} · {finding.summary}: {finding.detail}"
 
     def process_event(self, event: pygame.event.Event) -> None:
         screen = pygame.display.get_surface()
@@ -223,7 +231,11 @@ class MissionScreen:
             else:
                 raise ValueError("Orden no reconocida")
             if not preserve_feedback:
-                self.feedback_text = f'Orden aplicada: "{command}"'
+                self.feedback_text = (
+                    self.preflight_feedback()
+                    if self.runtime.status == "blocked"
+                    else f'Orden aplicada: "{command}"'
+                )
             self.mission_log.add_event("operator_command", command)
         except (ValueError, IndexError) as error:
             self.feedback_text = f"No pude aplicar la orden: {error}"
@@ -289,7 +301,11 @@ class MissionScreen:
                 self.scenario.inject_thermal_anomaly(-34.601, -58.398)
             elif action == "add":
                 self.add_resource()
-            self.feedback_text = f"Scenario Control aplicó: {action}"
+            self.feedback_text = (
+                self.preflight_feedback()
+                if self.runtime.status == "blocked"
+                else f"Scenario Control aplicó: {action}"
+            )
         except ValueError as error:
             self.feedback_text = f"No se pudo aplicar {action}: {error}"
 
@@ -450,7 +466,7 @@ class MissionScreen:
         pygame.draw.circle(screen, theme.PRIMARY, send_rect.center, 18)
         send = self.text_font.render("→", True, theme.PANEL)
         screen.blit(send, send.get_rect(center=send_rect.center))
-        placeholder = "Comando: viento 7.2 · producto D1 1 · posición D1 LAT LON ALT"
+        placeholder = self.feedback_text or "Comando: viento 7.2 · producto D1 1 · posición D1 LAT LON ALT"
         text = self.command_text or placeholder
         color = theme.TEXT if self.command_text else theme.MUTED_TEXT
         available = send_rect.left - rect.left - 28
