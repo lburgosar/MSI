@@ -308,8 +308,14 @@ class MonitorScreen:
             y += 19
             sensors = selected.get("sensors", [])
             feed_rect = pygame.Rect(x, y, panel.width - 26, min(60, max(42, panel.height // 5)))
-            pygame.draw.rect(screen, (35, 44, 47), feed_rect, border_radius=10)
             sensor_type = sensors[0].get("sensor_type", "NO SENSOR") if sensors else "NO SENSOR"
+            sensor_key = str(sensor_type).lower()
+            feed_color = (
+                (62, 27, 35) if "thermal" in sensor_key else
+                (31, 44, 65) if "multispectral" in sensor_key else
+                (35, 44, 47)
+            )
+            pygame.draw.rect(screen, feed_color, feed_rect, border_radius=10)
             sensor_label = self.small_font.render(
                 f"SIMULATED SENSOR DATA · {str(sensor_type).upper()}", True, (210, 225, 221)
             )
@@ -320,6 +326,13 @@ class MonitorScreen:
                     (feed_rect.left + 10, feed_rect.top + offset),
                     (feed_rect.right - 10, feed_rect.top + offset), 1,
                 )
+            if "thermal" in sensor_key:
+                pygame.draw.circle(screen, (236, 93, 49), feed_rect.center, 14)
+                pygame.draw.circle(screen, (255, 196, 77), feed_rect.center, 7)
+            elif "multispectral" in sensor_key:
+                for index, color in enumerate(((62, 108, 163), (89, 142, 103), (157, 91, 142))):
+                    band = pygame.Rect(feed_rect.left + 10 + index * (feed_rect.width - 20) // 3, feed_rect.bottom - 18, (feed_rect.width - 26) // 3, 8)
+                    pygame.draw.rect(screen, color, band, border_radius=3)
             y = feed_rect.bottom + 10
 
         preflight = self.state.get("preflight_explanation", {})

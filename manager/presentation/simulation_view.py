@@ -91,9 +91,9 @@ class SimulationView:
         completed_points = [*projected[: waypoint_index + 1], current]
         pending_points = [current, *projected[waypoint_index + 1:]]
         if len(completed_points) >= 2:
-            pygame.draw.lines(screen, self.PATH_COMPLETE, False, completed_points, width=3)
+            pygame.draw.lines(screen, self.PATH_COMPLETE, False, completed_points, width=5)
         if len(pending_points) >= 2:
-            pygame.draw.lines(screen, self.PATH_PENDING, False, pending_points, width=3)
+            pygame.draw.lines(screen, self.PATH_PENDING, False, pending_points, width=2)
         pygame.draw.circle(screen, self.PANEL, endpoint, target_radius)
         pygame.draw.circle(screen, self.TARGET_COLOR, endpoint, target_radius, width=2)
 

@@ -108,6 +108,13 @@ class V2UiWorkflowTests(unittest.TestCase):
         screen.apply_scenario_action("wind")
         self.assertEqual(screen.runtime.environment["wind_m_s"], 3.0)
 
+    def test_secondary_scenarios_select_an_assigned_resource_by_default(self) -> None:
+        patrol = MissionScreen("Patrullaje · Las Marías", MissionState())
+        emergency = MissionScreen("Respuesta de emergencia · Las Marías", MissionState())
+
+        self.assertEqual(patrol.selected_resource_id, "D3")
+        self.assertEqual(emergency.selected_resource_id, "D3")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -61,6 +61,12 @@ class MissionScreen:
                 Path(__file__).resolve().parents[2] / "data" / "v2_traces",
             ),
         )
+        first_assignment = next(
+            (task.assigned_resource_id for task in self.runtime.plan.tasks if task.assigned_resource_id),
+            None,
+        ) if self.runtime.plan else None
+        if first_assignment:
+            self.selected_resource_id = first_assignment
         self.scenario = ScenarioEngine(self.runtime)
         self.map_view = OperationalMapView()
         self.mission_log = MissionLog(action, location)
