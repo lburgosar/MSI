@@ -473,9 +473,30 @@ class MissionRuntimeV2:
     def snapshot(self) -> dict[str, object]:
         resources = self.resource_provider.list_resources()
         resource_snapshots = to_primitive(resources)
+        task_by_resource = {
+            task.assigned_resource_id: task for task in self.plan.tasks if task.assigned_resource_id
+        } if self.plan else {}
+        capability = {
+            MissionIntent.PRECISION_SPRAYING: "precision_spraying",
+            MissionIntent.AUTONOMOUS_PATROL: "area_patrol",
+            MissionIntent.EMERGENCY_RESPONSE: "incident_assessment",
+        }[self.configuration.intent]
         for resource, resource_snapshot in zip(resources, resource_snapshots):
             x, y = self.map_provider.world_to_map(resource.position)
             resource_snapshot["map_position"] = {"x": x, "y": y}
+            task = task_by_resource.get(resource.resource_id)
+            resource_snapshot["mission_role"] = (
+                "APLICACIÓN" if resource.can("precision_spraying") else
+                "RECONOCIMIENTO TÉRMICO" if resource.can("thermal_imaging") else
+                "PATRULLA / RELAY" if resource.can("area_patrol") else
+                "NO COMPATIBLE"
+            )
+            resource_snapshot["compatible"] = resource.can(capability)
+            resource_snapshot["assigned"] = task is not None
+            resource_snapshot["assignment"] = (
+                {"task_id": task.task_id, "sector": task.sector, "status": task.status}
+                if task else None
+            )
         drones = self.simulation.telemetry() if self.simulation else []
         wind_limit = float(self.configuration.parameters.get("max_wind_m_s", 999.0))
         resume_allowed = self.paused and self.environment["wind_m_s"] <= wind_limit
@@ -533,6 +554,16 @@ class MissionRuntimeV2:
                     "impact": "Pendiente de autorización",
                     "intervention_required": False,
                 }
+            ),
+            "decision_narrative": (
+                {
+                    "condition": self.decisions[-1].trigger,
+                    "evaluation": self.decisions[-1].evaluation,
+                    "decision": self.decisions[-1].selected_action,
+                    "impact": self.decisions[-1].impact,
+                    "action": ", ".join(self.decisions[-1].commands) or "Intervención requerida",
+                }
+                if self.decisions else None
             ),
         }
 

@@ -271,7 +271,9 @@ class MonitorScreen:
             rect = pygame.Rect(x, y, chip_width, 34)
             self.resource_hitboxes[resource_id] = rect
             active = resource_id == self.selected_resource_id
-            pygame.draw.rect(screen, theme.PRIMARY_SOFT if active else (248, 248, 249), rect, border_radius=10)
+            assigned = bool(resource.get("assigned"))
+            fill = theme.PRIMARY_SOFT if active else ((237, 247, 241) if assigned else (248, 248, 249))
+            pygame.draw.rect(screen, fill, rect, border_radius=10)
             pygame.draw.rect(screen, theme.PRIMARY if active else theme.BORDER, rect, 1, border_radius=10)
             energy = float(resource.get("energy", {}).get("percent", 0))
             label = self.small_font.render(f"{resource_id}  {energy:.0f}%", True, theme.TEXT)
@@ -296,11 +298,21 @@ class MonitorScreen:
             )
             screen.blit(detail, (x, y))
             y += 22
+            assignment = selected.get("assignment") or {}
+            assignment_text = (
+                f"ASIGNADO · {assignment.get('task_id')} · SECTOR {assignment.get('sector')}"
+                if selected.get("assigned") else "DISPONIBLE · NO ASIGNADO"
+            )
+            role = self.fit_text(f"{assignment_text} · {selected.get('mission_role', '')}", panel.width - 26)
+            screen.blit(self.small_font.render(role, True, theme.PRIMARY if selected.get("assigned") else theme.SECONDARY_TEXT), (x, y))
+            y += 19
             sensors = selected.get("sensors", [])
             feed_rect = pygame.Rect(x, y, panel.width - 26, min(60, max(42, panel.height // 5)))
             pygame.draw.rect(screen, (35, 44, 47), feed_rect, border_radius=10)
             sensor_type = sensors[0].get("sensor_type", "NO SENSOR") if sensors else "NO SENSOR"
-            sensor_label = self.small_font.render(str(sensor_type).upper(), True, (210, 225, 221))
+            sensor_label = self.small_font.render(
+                f"SIMULATED SENSOR DATA · {str(sensor_type).upper()}", True, (210, 225, 221)
+            )
             screen.blit(sensor_label, (feed_rect.left + 10, feed_rect.top + 8))
             for offset in range(24, feed_rect.height - 5, 12):
                 pygame.draw.line(
@@ -329,25 +341,25 @@ class MonitorScreen:
                 y += 17
             y += 5
 
-        decisions = list(self.state.get("decisions", []))
-        if decisions:
-            decision = decisions[-1]
-            decision_rect = pygame.Rect(x, y, panel.width - 26, 61)
+        narrative = self.state.get("decision_narrative")
+        if narrative:
+            decision_rect = pygame.Rect(x, y, panel.width - 26, 112)
             pygame.draw.rect(screen, (241, 247, 255), decision_rect, border_radius=10)
             pygame.draw.rect(screen, (181, 211, 244), decision_rect, width=1, border_radius=10)
-            action = self.small_font.render(
-                f"MSI · {str(decision.get('selected_action', '')).replace('_', ' ').upper()}",
-                True,
-                theme.PRIMARY,
+            rows = (
+                ("CONDITION", narrative.get("condition")),
+                ("EVALUATION", narrative.get("evaluation")),
+                ("DECISION", str(narrative.get("decision", "")).replace("_", " ").upper()),
+                ("IMPACT", narrative.get("impact")),
+                ("ACTION", narrative.get("action")),
             )
-            screen.blit(action, (decision_rect.left + 9, decision_rect.top + 6))
-            reason = self.fit_text(str(decision.get("reason", "")), decision_rect.width - 18)
-            impact = self.fit_text(str(decision.get("impact", "")), decision_rect.width - 18)
-            screen.blit(self.small_font.render(reason, True, theme.TEXT), (decision_rect.left + 9, decision_rect.top + 24))
-            screen.blit(
-                self.small_font.render(impact, True, theme.SECONDARY_TEXT),
-                (decision_rect.left + 9, decision_rect.top + 41),
-            )
+            row_y = decision_rect.top + 7
+            for label, value in rows:
+                prefix = self.small_font.render(label, True, theme.PRIMARY)
+                screen.blit(prefix, (decision_rect.left + 9, row_y))
+                clipped = self.fit_text(str(value), decision_rect.width - prefix.get_width() - 24)
+                screen.blit(self.small_font.render(clipped, True, theme.TEXT), (decision_rect.left + 14 + prefix.get_width(), row_y))
+                row_y += 20
             y = decision_rect.bottom + 8
 
         timeline_title = self.section_font.render("DECISIONES / EVENTOS", True, theme.SECONDARY_TEXT)

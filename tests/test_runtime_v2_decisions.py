@@ -106,6 +106,12 @@ class RuntimeV2DecisionTests(unittest.TestCase):
         self.assertEqual(snapshot["schema_version"], 2)
         self.assertEqual(snapshot["mode"], "simulation")
         self.assertEqual(len(snapshot["resources"]), 4)
+        resources = {item["resource_id"]: item for item in snapshot["resources"]}
+        self.assertTrue(resources["D1"]["compatible"])
+        self.assertTrue(resources["D1"]["assigned"])
+        self.assertEqual(resources["D1"]["assignment"]["sector"], "A")
+        self.assertFalse(resources["D3"]["compatible"])
+        self.assertFalse(resources["D3"]["assigned"])
 
     def test_preflight_explanation_exposes_compatibility_and_constraints(self) -> None:
         snapshot = self.runtime().snapshot()
@@ -126,6 +132,18 @@ class RuntimeV2DecisionTests(unittest.TestCase):
         self.assertEqual(explanation["status"], "blocked")
         finding = next(item for item in explanation["findings"] if item["code"] == "WIND_LIMIT")
         self.assertIn("esperar condiciones válidas", finding["alternatives"])
+
+    def test_decision_narrative_exposes_operational_sequence(self) -> None:
+        runtime = self.runtime()
+        runtime.authorize()
+        runtime.start()
+        ScenarioEngine(runtime).set_wind(7.2)
+
+        narrative = runtime.snapshot()["decision_narrative"]
+        self.assertIn("wind_m_s", narrative["condition"])
+        self.assertIn("supera el límite", narrative["evaluation"])
+        self.assertEqual(narrative["decision"], "pause_mission")
+        self.assertIn("PAUSE_ASSIGNED_RESOURCES", narrative["action"])
 
     def test_pre_execution_wind_change_recomputes_preflight_instead_of_pausing(self) -> None:
         runtime = self.runtime()

@@ -95,6 +95,19 @@ class V2UiWorkflowTests(unittest.TestCase):
         screen.render(pygame.Surface((1280, 800)))
         self.assertFalse(screen.command_text)
 
+    def test_scenario_controls_expose_existing_link_sensor_and_wind_restore(self) -> None:
+        screen = MissionScreen("Pulverización · Las Marías", MissionState())
+        screen.primary_action(); screen.primary_action()
+        actions = dict(screen.scenario_actions())
+        self.assertIn("link", actions)
+        self.assertIn("sensor", actions)
+
+        screen.apply_scenario_action("wind")
+        self.assertEqual(screen.runtime.status, "paused")
+        self.assertIn("Restaurar viento", dict(screen.scenario_actions())["wind"])
+        screen.apply_scenario_action("wind")
+        self.assertEqual(screen.runtime.environment["wind_m_s"], 3.0)
+
 
 if __name__ == "__main__":
     unittest.main()

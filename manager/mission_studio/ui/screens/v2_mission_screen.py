@@ -278,11 +278,21 @@ class MissionScreen:
         resource_id = self.selected_resource_id
         try:
             if action == "wind":
-                self.scenario.set_wind(7.2, 265)
+                self.scenario.set_wind(
+                    3.0 if self.runtime.environment["wind_m_s"] > 5.0 else 7.2,
+                    240 if self.runtime.environment["wind_m_s"] > 5.0 else 265,
+                )
             elif action == "product":
                 self.scenario.set_product(resource_id, 1.0)
             elif action == "battery":
                 self.scenario.set_battery(resource_id, 18.0)
+            elif action == "link":
+                self.scenario.set_link_quality(resource_id, 40.0)
+            elif action == "sensor":
+                resource = self.provider.get_resource(resource_id)
+                if not resource.sensors:
+                    raise ValueError(f"{resource_id} no tiene sensores")
+                self.scenario.fail_sensor(resource_id, resource.sensors[0].sensor_id)
             elif action in {"withdraw", "remove"}:
                 self.scenario.withdraw(resource_id)
             elif action == "disable":
@@ -427,6 +437,9 @@ class MissionScreen:
         heading = self.section_font.render("FLOTA / RECURSOS", True, theme.SECONDARY_TEXT)
         screen.blit(heading, (x, y))
         y += 26
+        assignments = {
+            task.assigned_resource_id: task for task in self.runtime.plan.tasks if task.assigned_resource_id
+        } if self.runtime.plan else {}
         for resource in self.provider.list_resources()[:6]:
             rect = pygame.Rect(x, y, panel.width - 28, 47)
             self.resource_rects[resource.resource_id] = rect
@@ -435,8 +448,14 @@ class MissionScreen:
             if selected:
                 pygame.draw.rect(screen, theme.PRIMARY, rect, width=1, border_radius=11)
             name = self.small_font.render(f"{resource.resource_id}  {resource.display_name}", True, theme.TEXT)
+            task = assignments.get(resource.resource_id)
+            role = (
+                "APLICACIÓN" if resource.can("precision_spraying") else
+                "TÉRMICO" if resource.can("thermal_imaging") else "PATRULLA/RELAY"
+            )
+            state = f"ASIGNADO {task.sector}" if task else "NO ASIGNADO"
             details = self.small_font.render(
-                f"BAT {resource.energy.percent:.0f}%  ·  LINK {resource.communication.link_quality_percent:.0f}%  ·  {resource.availability.value.upper()}",
+                f"{state} · {role} · BAT {resource.energy.percent:.0f}%",
                 True, theme.SECONDARY_TEXT,
             )
             screen.blit(name, (rect.left + 10, rect.top + 7))
@@ -478,16 +497,28 @@ class MissionScreen:
                 ("enable", "Activar seleccionado"),
                 ("remove", "Retirar seleccionado"),
             ]
-        if self.intent is MissionIntent.AUTONOMOUS_PATROL:
-            return [("anomaly", "Anomalía térmica"), ("battery", "Batería 18%"), ("withdraw", "Retirar seleccionado")]
-        if self.intent is MissionIntent.EMERGENCY_RESPONSE:
-            return [("anomaly", "Nuevo foco prioritario"), ("battery", "Batería 18%"), ("withdraw", "Retirar seleccionado")]
-        return [
-            ("wind", "Viento 7.2 m/s"),
-            ("product", "Producto 1 L"),
-            ("battery", "Batería 18%"),
-            ("withdraw", "Retirar seleccionado"),
-        ]
+        selected = self.provider.get_resource(self.selected_resource_id)
+        if self.intent in {MissionIntent.AUTONOMOUS_PATROL, MissionIntent.EMERGENCY_RESPONSE}:
+            anomaly = "Anomalía térmica" if self.intent is MissionIntent.AUTONOMOUS_PATROL else "Nuevo foco prioritario"
+            return [
+                ("anomaly", anomaly),
+                ("battery", f"{selected.resource_id} batería {selected.energy.percent:.0f} → 18%"),
+                ("link", f"{selected.resource_id} enlace {selected.communication.link_quality_percent:.0f} → 40%"),
+                ("sensor", f"Falla sensor {selected.resource_id}"),
+                ("withdraw", f"Retirar {selected.resource_id}"),
+            ]
+        wind = self.runtime.environment["wind_m_s"]
+        wind_label = "Restaurar viento → 3.0" if wind > 5.0 else f"Viento {wind:.1f} → 7.2"
+        actions = [("wind", wind_label)]
+        if selected.consumable:
+            actions.append(("product", f"{selected.resource_id} producto {selected.consumable.remaining_l:.1f} → 1 L"))
+        actions.extend([
+            ("battery", f"{selected.resource_id} batería {selected.energy.percent:.0f} → 18%"),
+            ("link", f"{selected.resource_id} enlace {selected.communication.link_quality_percent:.0f} → 40%"),
+            ("sensor", f"Falla sensor {selected.resource_id}"),
+            ("withdraw", f"Retirar {selected.resource_id}"),
+        ])
+        return actions
 
     def render_prompt(self, screen: pygame.Surface, width: int, height: int) -> None:
         rect = layout.get_bottom_prompt_rect(width, height)
