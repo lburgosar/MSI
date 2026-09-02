@@ -310,6 +310,25 @@ class MonitorScreen:
                 )
             y = feed_rect.bottom + 10
 
+        preflight = self.state.get("preflight_explanation", {})
+        if preflight and self.state.get("status") in {"ready", "blocked"}:
+            color = theme.SUCCESS if preflight.get("status") == "ready" else theme.WARNING
+            title = self.section_font.render(
+                f"PREFLIGHT {str(preflight.get('status', '')).upper()} · {preflight.get('result', '')}",
+                True, color,
+            )
+            screen.blit(title, (x, y))
+            y += 21
+            for check in list(preflight.get("checks", []))[:4]:
+                marker = "OK" if check.get("ok") else "ATENCIÓN"
+                line = self.fit_text(
+                    f"{marker} {check.get('label')}: {check.get('actual')} / {check.get('required')}",
+                    panel.width - 26,
+                )
+                screen.blit(self.small_font.render(line, True, theme.TEXT), (x, y))
+                y += 17
+            y += 5
+
         decisions = list(self.state.get("decisions", []))
         if decisions:
             decision = decisions[-1]

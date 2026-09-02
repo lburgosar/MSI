@@ -107,6 +107,26 @@ class RuntimeV2DecisionTests(unittest.TestCase):
         self.assertEqual(snapshot["mode"], "simulation")
         self.assertEqual(len(snapshot["resources"]), 4)
 
+    def test_preflight_explanation_exposes_compatibility_and_constraints(self) -> None:
+        snapshot = self.runtime().snapshot()
+        explanation = snapshot["preflight_explanation"]
+
+        self.assertEqual(explanation["status"], "ready")
+        self.assertEqual(explanation["compatible_ids"], ["D1", "D2"])
+        self.assertEqual(explanation["assigned_ids"], ["D1", "D2"])
+        self.assertEqual(explanation["area_hectares"], 3.6)
+        self.assertEqual(explanation["result"], "MISIÓN VIABLE")
+        self.assertTrue(all(check["ok"] for check in explanation["checks"]))
+
+    def test_blocked_preflight_explanation_includes_feasible_alternatives(self) -> None:
+        runtime = self.runtime()
+        ScenarioEngine(runtime).set_wind(7.2)
+        explanation = runtime.snapshot()["preflight_explanation"]
+
+        self.assertEqual(explanation["status"], "blocked")
+        finding = next(item for item in explanation["findings"] if item["code"] == "WIND_LIMIT")
+        self.assertIn("esperar condiciones válidas", finding["alternatives"])
+
     def test_pre_execution_wind_change_recomputes_preflight_instead_of_pausing(self) -> None:
         runtime = self.runtime()
         ScenarioEngine(runtime).set_wind(7.0)

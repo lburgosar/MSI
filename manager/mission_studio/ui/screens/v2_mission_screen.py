@@ -365,6 +365,7 @@ class MissionScreen:
         self.scenario_rects.clear()
         if compact:
             self.render_compact_controls(screen, width)
+            self.render_compact_preflight(screen, width)
             self.map_rect = None
         else:
             prompt_rect = layout.get_bottom_prompt_rect(width, height)
@@ -404,6 +405,21 @@ class MissionScreen:
             screen.blit(surface, surface.get_rect(center=rect.center))
             x += button_width + 8
 
+    def render_compact_preflight(self, screen: pygame.Surface, width: int) -> None:
+        explanation = self.runtime.snapshot()["preflight_explanation"]
+        checks = explanation["checks"]
+        summary = "  ·  ".join(
+            f"{'OK' if item['ok'] else 'ATENCIÓN'} {item['label']}: {item['actual']} / {item['required']}"
+            for item in checks
+        )
+        color = theme.SUCCESS if explanation["status"] == "ready" else theme.DANGER
+        text = self.small_font.render(summary, True, color)
+        max_width = width - 2 * layout.get_horizontal_margin(width)
+        if text.get_width() > max_width:
+            summary = summary[: max(20, int(len(summary) * max_width / text.get_width()) - 3)] + "..."
+            text = self.small_font.render(summary, True, color)
+        screen.blit(text, ((width - text.get_width()) // 2, 128))
+
     def render_side_panel(self, screen: pygame.Surface, panel: pygame.Rect) -> None:
         pygame.draw.rect(screen, theme.PANEL, panel, border_radius=18)
         pygame.draw.rect(screen, theme.BORDER, panel, width=1, border_radius=18)
@@ -438,6 +454,21 @@ class MissionScreen:
             surface = self.small_font.render(text, True, theme.TEXT)
             screen.blit(surface, (rect.left + 10, rect.centery - surface.get_height() // 2))
             y += 39
+
+        if y + 62 < panel.bottom:
+            explanation = self.runtime.snapshot()["preflight_explanation"]
+            y += 5
+            color = theme.SUCCESS if explanation["status"] == "ready" else theme.DANGER
+            title = self.section_font.render(
+                f"PREFLIGHT {str(explanation['status']).upper()} · {explanation['result']}", True, color
+            )
+            screen.blit(title, (x, y))
+            y += 21
+            for check in explanation["checks"][:3]:
+                line = f"{'OK' if check['ok'] else 'ATENCIÓN'} {check['label']}: {check['actual']} / {check['required']}"
+                surface = self.small_font.render(line, True, theme.TEXT)
+                screen.blit(surface, (x, y))
+                y += 17
 
     def scenario_actions(self) -> list[tuple[str, str]]:
         if self.runtime.status not in {"running", "paused"}:

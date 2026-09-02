@@ -395,6 +395,81 @@ class MissionRuntimeV2:
             return 0
         return round(sum(task.progress_percent for task in self.plan.tasks) / len(self.plan.tasks))
 
+    def preflight_explanation(self, resources: list[Resource]) -> dict[str, object]:
+        """Structured, interface-neutral explanation of the current viability check."""
+        assigned_ids = {
+            task.assigned_resource_id for task in self.plan.tasks if task.assigned_resource_id
+        } if self.plan else set()
+        capability = {
+            MissionIntent.PRECISION_SPRAYING: "precision_spraying",
+            MissionIntent.AUTONOMOUS_PATROL: "area_patrol",
+            MissionIntent.EMERGENCY_RESPONSE: "incident_assessment",
+        }[self.configuration.intent]
+        compatible = [item for item in resources if item.can(capability)]
+        assigned = [item for item in resources if item.resource_id in assigned_ids]
+        checks: list[dict[str, object]] = [
+            {
+                "label": "Recursos compatibles",
+                "actual": ", ".join(item.resource_id for item in compatible) or "ninguno",
+                "required": capability,
+                "ok": bool(compatible),
+            },
+            {
+                "label": "Reserva energética",
+                "actual": ", ".join(
+                    f"{item.resource_id} {item.energy.percent:.0f}%" for item in assigned
+                ) or "sin asignación",
+                "required": "reserva + 8%",
+                "ok": bool(assigned) and all(
+                    item.energy.percent > item.energy.reserve_percent + 8 for item in assigned
+                ),
+            },
+        ]
+        if self.configuration.intent is MissionIntent.PRECISION_SPRAYING:
+            required = float(self.plan.estimated_consumption_l if self.plan else 0.0)
+            available = sum(
+                item.consumable.remaining_l for item in assigned if item.consumable
+            )
+            wind = self.environment["wind_m_s"]
+            limit = self.configuration.parameters.get("max_wind_m_s")
+            checks.extend([
+                {
+                    "label": "Producto compatible",
+                    "actual": f"{available:.1f} L",
+                    "required": f"{required:.1f} L",
+                    "ok": available >= required,
+                },
+                {
+                    "label": "Viento",
+                    "actual": f"{wind:.1f} m/s",
+                    "required": "límite no definido" if limit is None else f"≤ {float(limit):.1f} m/s",
+                    "ok": limit is not None and wind <= float(limit),
+                },
+            ])
+        alternatives_by_code = {
+            "NO_COMPATIBLE_RESOURCE": ("incorporar un recurso compatible", "modificar el objetivo"),
+            "ENERGY_RESERVE": ("recargar o sustituir el recurso", "reducir el alcance"),
+            "INSUFFICIENT_PRODUCT": ("recargar producto", "incorporar recurso compatible", "reducir área o dividir misión"),
+            "WIND_LIMIT_MISSING": ("definir un límite operacional validado",),
+            "WIND_LIMIT": ("esperar condiciones válidas", "modificar la misión dentro de reglas autorizadas"),
+        }
+        findings = []
+        for finding in self.preflight.findings if self.preflight else []:
+            findings.append({
+                **to_primitive(finding),
+                "alternatives": list(alternatives_by_code.get(finding.code, ())),
+            })
+        return {
+            "status": self.preflight.status.value if self.preflight else "unknown",
+            "available_count": len(resources),
+            "compatible_ids": [item.resource_id for item in compatible],
+            "assigned_ids": sorted(assigned_ids),
+            "area_hectares": self.configuration.parameters.get("area_hectares"),
+            "checks": checks,
+            "findings": findings,
+            "result": "MISIÓN VIABLE" if self.preflight and self.preflight.status is PreflightStatus.READY else "INTERVENCIÓN REQUERIDA",
+        }
+
     def snapshot(self) -> dict[str, object]:
         resources = self.resource_provider.list_resources()
         resource_snapshots = to_primitive(resources)
@@ -421,6 +496,7 @@ class MissionRuntimeV2:
                 f"Viento {self.environment['wind_m_s']:.1f} m/s > límite {wind_limit:.1f} m/s"
             ),
             "preflight": to_primitive(self.preflight),
+            "preflight_explanation": self.preflight_explanation(resources),
             "plan": to_primitive(self.plan),
             "resources": resource_snapshots,
             "drones": drones,
