@@ -55,6 +55,8 @@ class MissionMonitor:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+                continue
+            self.monitor_screen.process_event(event)
 
     def update(self) -> None:
         """

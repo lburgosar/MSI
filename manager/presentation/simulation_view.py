@@ -82,13 +82,18 @@ class SimulationView:
         if not trajectory or not target or not position:
             return
 
-        start = self.project(trajectory[0], viewport)
         current = self.project(position, viewport)
-        endpoint = self.project(target, viewport)
+        objective = drone.get("objective") or target
+        endpoint = self.project(objective, viewport)
         target_radius = 5 if viewport.height < 100 else 8
-
-        pygame.draw.line(screen, self.PATH_COMPLETE, start, current, width=3)
-        pygame.draw.line(screen, self.PATH_PENDING, current, endpoint, width=3)
+        waypoint_index = int(drone.get("waypoint_index", 0))
+        projected = [self.project(point, viewport) for point in trajectory]
+        completed_points = [*projected[: waypoint_index + 1], current]
+        pending_points = [current, *projected[waypoint_index + 1:]]
+        if len(completed_points) >= 2:
+            pygame.draw.lines(screen, self.PATH_COMPLETE, False, completed_points, width=3)
+        if len(pending_points) >= 2:
+            pygame.draw.lines(screen, self.PATH_PENDING, False, pending_points, width=3)
         pygame.draw.circle(screen, self.PANEL, endpoint, target_radius)
         pygame.draw.circle(screen, self.TARGET_COLOR, endpoint, target_radius, width=2)
 
@@ -111,15 +116,22 @@ class SimulationView:
             pygame.draw.circle(screen, self.SELECTED_COLOR, center, selection_radius)
             pygame.draw.circle(screen, self.DRONE_COLOR, center, selection_radius, width=2)
 
-        pygame.draw.circle(screen, self.DRONE_COLOR, center, marker_radius)
+        color = self._resource_color(drone)
+        pygame.draw.circle(screen, color, center, marker_radius)
 
         angle = radians(float(drone.get("orientation_degrees", 0.0)))
         direction = (
             center[0] + int(cos(angle) * direction_length),
             center[1] + int(sin(angle) * direction_length),
         )
-        pygame.draw.line(screen, self.DRONE_COLOR, center, direction, width=3)
+        pygame.draw.line(screen, color, center, direction, width=3)
         pygame.draw.circle(screen, self.PANEL, direction, 3)
+
+        # Silueta funcional de multirrotor; el renderer puede cambiar sin tocar
+        # el modelo ni la simulación.
+        arm = max(5, marker_radius - 5)
+        pygame.draw.line(screen, self.PANEL, (center[0] - arm, center[1]), (center[0] + arm, center[1]), 2)
+        pygame.draw.line(screen, self.PANEL, (center[0], center[1] - arm), (center[0], center[1] + arm), 2)
 
         short_id = drone_id.replace("MSI-DRONE-0", "D")
         label = self.label_font.render(short_id, True, self.PANEL)
@@ -128,6 +140,17 @@ class SimulationView:
         if interactive:
             # El hitbox es mayor que el marcador para admitir interacción táctil.
             self._hitboxes[drone_id] = pygame.Rect(center[0] - 28, center[1] - 28, 56, 56)
+
+    @staticmethod
+    def _resource_color(drone: dict[str, Any]) -> tuple[int, int, int]:
+        capabilities = set(drone.get("capabilities") or [])
+        if "precision_spraying" in capabilities:
+            return 32, 132, 102
+        if "thermal_imaging" in capabilities:
+            return 205, 104, 48
+        if "communications_relay" in capabilities:
+            return 105, 84, 180
+        return SimulationView.DRONE_COLOR
 
     def _render_selection_card(
         self,

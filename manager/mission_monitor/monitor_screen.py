@@ -19,6 +19,7 @@ import pygame
 import theme
 from live_state_reader import LiveStateReader
 from presentation.simulation_view import SimulationView
+from presentation.operational_map import OperationalMapView
 
 
 class MonitorScreen:
@@ -53,6 +54,9 @@ class MonitorScreen:
         self.state_reader = LiveStateReader()
         self.state = self.state_reader.read()
         self.simulation_view = SimulationView()
+        self.operational_map = OperationalMapView()
+        self.selected_resource_id: str | None = None
+        self.resource_hitboxes: dict[str, pygame.Rect] = {}
 
         self.refresh_timer = 0.0
         self.refresh_interval = 0.20
@@ -74,6 +78,11 @@ class MonitorScreen:
             15,
         )
 
+        self.small_font = pygame.font.SysFont(
+            "Segoe UI",
+            12,
+        )
+
         self.large_status_font = pygame.font.SysFont(
             "Segoe UI",
             28,
@@ -90,6 +99,14 @@ class MonitorScreen:
         if self.refresh_timer >= self.refresh_interval:
             self.state = self.state_reader.read()
             self.refresh_timer = 0.0
+
+    def process_event(self, event: pygame.event.Event) -> None:
+        if event.type != pygame.MOUSEBUTTONDOWN:
+            return
+        for resource_id, rect in self.resource_hitboxes.items():
+            if rect.collidepoint(event.pos):
+                self.selected_resource_id = resource_id
+                return
 
     @staticmethod
     def format_value(
@@ -113,6 +130,10 @@ class MonitorScreen:
         screen.fill(theme.BACKGROUND)
 
         width, height = screen.get_size()
+
+        if self.state.get("schema_version") == 2:
+            self.render_v2(screen, pygame.Rect(0, 0, width, height))
+            return
 
         if height < 520:
             self.render_compact(screen, pygame.Rect(0, 0, width, height))
@@ -167,6 +188,145 @@ class MonitorScreen:
             screen,
             simulation_rect,
         )
+
+    def render_v2(self, screen: pygame.Surface, window_rect: pygame.Rect) -> None:
+        """Mission Monitor operacional: mapa, recursos, sensores y decisiones."""
+
+        header_height = 82
+        pygame.draw.rect(screen, theme.PANEL, (0, 0, window_rect.width, header_height))
+        pygame.draw.line(screen, theme.BORDER, (0, header_height), (window_rect.width, header_height))
+        scenario = str(self.state.get("scenario", "mission")).replace("_", " ").upper()
+        status = str(self.state.get("status", "idle")).upper()
+        progress = self.state.get("progress_percent", 0)
+        mode = str(self.state.get("mode", "simulation")).upper()
+        title = self.title_font.render("MSI Mission Monitor", True, theme.TEXT)
+        screen.blit(title, (20, 11))
+        subtitle = self.small_text(
+            f"{scenario}  ·  {mode}  ·  {status}  ·  PROGRESO {progress}%",
+            theme.SECONDARY_TEXT,
+        )
+        screen.blit(subtitle, (20, 45))
+
+        environment = self.state.get("environment", {})
+        environment_text = self.small_text(
+            f"VIENTO {float(environment.get('wind_m_s', 0)):.1f} m/s  "
+            f"{float(environment.get('wind_direction_deg', 0)):.0f}°  ·  "
+            f"TEMP {float(environment.get('temperature_c', 0)):.0f}°C",
+            theme.TEXT,
+        )
+        screen.blit(environment_text, (window_rect.width - environment_text.get_width() - 22, 18))
+        latest = self.small_text(str(self.state.get("latest_event", "")), theme.SECONDARY_TEXT)
+        screen.blit(latest, (window_rect.width - latest.get_width() - 22, 47))
+
+        content = pygame.Rect(10, header_height + 8, window_rect.width - 20, window_rect.height - header_height - 18)
+        panel_width = max(320, int(content.width * .29))
+        map_rect = pygame.Rect(content.left, content.top, content.width - panel_width - 10, content.height)
+        panel_rect = pygame.Rect(map_rect.right + 10, content.top, panel_width, content.height)
+
+        map_state = dict(self.state)
+        drones = list(self.state.get("drones", []))
+        drone_ids = {str(item.get("id")) for item in drones}
+        for resource in self.state.get("resources", []):
+            if resource.get("resource_id") in drone_ids:
+                continue
+            position = resource.get("map_position")
+            if position:
+                drones.append({
+                    "id": resource.get("resource_id"),
+                    "position": position,
+                    "orientation_degrees": 0,
+                    "battery_percent": resource.get("energy", {}).get("percent", 0),
+                    "status": resource.get("availability", "available"),
+                    "capabilities": resource.get("capabilities", []),
+                    "trajectory": [],
+                    "target": None,
+                    "objective": None,
+                })
+        map_state["drones"] = drones
+        self.operational_map.set_state(map_state)
+        self.operational_map.render(screen, map_rect, interactive=False)
+        self.render_v2_panel(screen, panel_rect)
+
+    def small_text(self, text: str, color: tuple[int, int, int]) -> pygame.Surface:
+        return self.text_font.render(text, True, color)
+
+    def render_v2_panel(self, screen: pygame.Surface, panel: pygame.Rect) -> None:
+        pygame.draw.rect(screen, theme.PANEL, panel, border_radius=18)
+        pygame.draw.rect(screen, theme.BORDER, panel, width=1, border_radius=18)
+        resources = list(self.state.get("resources", []))
+        if self.selected_resource_id is None and resources:
+            self.selected_resource_id = str(resources[0].get("resource_id"))
+        selected = next(
+            (item for item in resources if item.get("resource_id") == self.selected_resource_id),
+            resources[0] if resources else None,
+        )
+        self.resource_hitboxes.clear()
+        x, y = panel.left + 13, panel.top + 12
+        heading = self.section_font.render("RECURSOS", True, theme.SECONDARY_TEXT)
+        screen.blit(heading, (x, y))
+        y += 22
+        chip_width = max(52, (panel.width - 34) // max(1, min(4, len(resources))))
+        for resource in resources[:4]:
+            resource_id = str(resource.get("resource_id"))
+            rect = pygame.Rect(x, y, chip_width, 34)
+            self.resource_hitboxes[resource_id] = rect
+            active = resource_id == self.selected_resource_id
+            pygame.draw.rect(screen, theme.PRIMARY_SOFT if active else (248, 248, 249), rect, border_radius=10)
+            pygame.draw.rect(screen, theme.PRIMARY if active else theme.BORDER, rect, 1, border_radius=10)
+            energy = float(resource.get("energy", {}).get("percent", 0))
+            label = self.small_font.render(f"{resource_id}  {energy:.0f}%", True, theme.TEXT)
+            screen.blit(label, label.get_rect(center=rect.center))
+            x += chip_width + 3
+        x = panel.left + 13
+        y += 43
+
+        if selected:
+            name = self.section_font.render(str(selected.get("display_name", "Resource")), True, theme.TEXT)
+            screen.blit(name, (x, y))
+            y += 21
+            consumable = selected.get("consumable")
+            product = (
+                f"  ·  PROD {float(consumable.get('remaining_l', 0)):.1f} L"
+                if consumable else ""
+            )
+            comm = selected.get("communication", {})
+            detail = self.small_font.render(
+                f"LINK {float(comm.get('link_quality_percent', 0)):.0f}%{product}",
+                True, theme.SECONDARY_TEXT,
+            )
+            screen.blit(detail, (x, y))
+            y += 22
+            sensors = selected.get("sensors", [])
+            feed_rect = pygame.Rect(x, y, panel.width - 26, min(76, max(45, panel.height // 4)))
+            pygame.draw.rect(screen, (35, 44, 47), feed_rect, border_radius=10)
+            sensor_type = sensors[0].get("sensor_type", "NO SENSOR") if sensors else "NO SENSOR"
+            sensor_label = self.small_font.render(str(sensor_type).upper(), True, (210, 225, 221))
+            screen.blit(sensor_label, (feed_rect.left + 10, feed_rect.top + 8))
+            for offset in range(24, feed_rect.height - 5, 12):
+                pygame.draw.line(
+                    screen, (65, 91, 86),
+                    (feed_rect.left + 10, feed_rect.top + offset),
+                    (feed_rect.right - 10, feed_rect.top + offset), 1,
+                )
+            y = feed_rect.bottom + 10
+
+        timeline_title = self.section_font.render("DECISIONES / EVENTOS", True, theme.SECONDARY_TEXT)
+        screen.blit(timeline_title, (x, y))
+        y += 21
+        available_rows = max(1, (panel.bottom - y - 8) // 34)
+        events = list(self.state.get("events", []))[-available_rows:]
+        for event in reversed(events):
+            event_type = str(event.get("event_type", "event")).upper()
+            summary = str(event.get("summary", ""))
+            type_surface = self.small_font.render(event_type, True, theme.PRIMARY)
+            screen.blit(type_surface, (x, y))
+            clipped = summary
+            max_width = panel.width - 30
+            while self.small_font.size(clipped)[0] > max_width and len(clipped) > 3:
+                clipped = clipped[:-4] + "..."
+            summary_surface = self.small_font.render(clipped, True, theme.TEXT)
+            screen.blit(summary_surface, (x, y + 14))
+            y += 34
 
     def render_compact(
         self,

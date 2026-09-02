@@ -39,6 +39,7 @@ class SimulatedDrone:
     waypoint_index: int = 0
 
     def telemetry(self) -> dict[str, Any]:
+        progress_percent = self._route_progress_percent()
         return {
             "id": self.drone_id,
             "position": {"x": self.position[0], "y": self.position[1]},
@@ -60,11 +61,28 @@ class SimulatedDrone:
             ),
             "waypoint_index": self.waypoint_index,
             "waypoint_count": len(self.route),
+            "route_progress_percent": progress_percent,
             "trajectory": [
                 {"x": point[0], "y": point[1]}
                 for point in self.trajectory
             ],
         }
+
+    def _route_progress_percent(self) -> float:
+        if not self.trajectory or not self.route:
+            return 0.0
+        segments = list(zip(self.trajectory, self.trajectory[1:]))
+        lengths = [hypot(end[0] - start[0], end[1] - start[1]) for start, end in segments]
+        total = sum(lengths)
+        if total == 0:
+            return 100.0 if self.status == "on_task" else 0.0
+        completed = sum(lengths[: self.waypoint_index])
+        segment_start = self.trajectory[self.waypoint_index]
+        completed += hypot(
+            self.position[0] - segment_start[0],
+            self.position[1] - segment_start[1],
+        )
+        return min(100.0, completed / total * 100.0)
 
 
 class SimulationEngine:

@@ -22,6 +22,8 @@ from planning.planners import MissionPlanner
 from planning.preflight import PreflightService
 from providers.resources import ResourceProvider
 from simulation.engine import DroneCommand, SimulatedDrone, SimulationEngine
+from traceability.recorder import OperationalTraceRecorder
+from transport.channels import OperationalStatePublisher
 
 from .decision_engine import DecisionEngine
 
@@ -33,11 +35,13 @@ class MissionRuntimeV2:
         self,
         configuration: MissionConfiguration,
         resource_provider: ResourceProvider,
-        publish: Callable[[dict[str, object]], None] | None = None,
+        state_publisher: OperationalStatePublisher | None = None,
+        trace_recorder: OperationalTraceRecorder | None = None,
     ) -> None:
         self.configuration = configuration
         self.resource_provider = resource_provider
-        self.publish_callback = publish
+        self.state_publisher = state_publisher
+        self.trace_recorder = trace_recorder
         self.planner_service = MissionPlanner()
         self.preflight_service = PreflightService()
         self.decision_engine = DecisionEngine()
@@ -57,6 +61,9 @@ class MissionRuntimeV2:
         self.paused = False
         self.publish_timer = 0.0
         self.initial_product: dict[str, float] = {}
+        if self.trace_recorder:
+            self.trace_recorder.record("mission_configuration", configuration)
+            self.trace_recorder.record("resource_snapshot", resource_provider.list_resources())
         self.plan_mission()
 
     def plan_mission(self) -> None:
@@ -70,6 +77,9 @@ class MissionRuntimeV2:
         self.authorized = False
         self._prepare_simulation(resources)
         self._event("plan", f"Plan V{self.plan.version} generado: {len(self.plan.tasks)} tareas")
+        if self.trace_recorder:
+            self.trace_recorder.record("plan", self.plan)
+            self.trace_recorder.record("preflight", self.preflight)
         self.publish()
 
     def _prepare_simulation(self, resources: list[Resource]) -> None:
@@ -159,8 +169,8 @@ class MissionRuntimeV2:
             if not resource_id or resource_id not in self.simulation.drones:
                 continue
             drone = self.simulation.drones[resource_id]
-            waypoint_count = max(1, len(drone.route))
-            partial = 1.0 if drone.status == "on_task" else drone.waypoint_index / waypoint_count
+            telemetry = drone.telemetry()
+            partial = float(telemetry["route_progress_percent"]) / 100.0
             task.progress_percent = min(100.0, partial * 100.0)
             try:
                 resource = self.resource_provider.get_resource(resource_id)
@@ -316,6 +326,8 @@ class MissionRuntimeV2:
 
     def _apply_decision(self, decision: DecisionRecord) -> None:
         self.decisions.append(decision)
+        if self.trace_recorder:
+            self.trace_recorder.record("decision", decision)
         self._event("decision", decision.selected_action, data={
             "reason": decision.reason,
             "impact": decision.impact,
@@ -348,6 +360,8 @@ class MissionRuntimeV2:
     ) -> OperationalEvent:
         event = OperationalEvent(event_type, summary, resource_id, data or {})
         self.events.append(event)
+        if self.trace_recorder:
+            self.trace_recorder.record("event", event)
         return event
 
     def progress_percent(self) -> int:
@@ -357,6 +371,10 @@ class MissionRuntimeV2:
 
     def snapshot(self) -> dict[str, object]:
         resources = self.resource_provider.list_resources()
+        resource_snapshots = to_primitive(resources)
+        for resource, resource_snapshot in zip(resources, resource_snapshots):
+            x, y = DEMO_BOUNDS.to_normalized(resource.position)
+            resource_snapshot["map_position"] = {"x": x, "y": y}
         drones = self.simulation.telemetry() if self.simulation else []
         return {
             "schema_version": 2,
@@ -371,7 +389,7 @@ class MissionRuntimeV2:
             "authorized": self.authorized,
             "preflight": to_primitive(self.preflight),
             "plan": to_primitive(self.plan),
-            "resources": to_primitive(resources),
+            "resources": resource_snapshots,
             "drones": drones,
             "active_drones": sum(item.get("status") == "moving" for item in drones),
             "assigned_nodes": len({task.assigned_resource_id for task in self.plan.tasks}) if self.plan else 0,
@@ -409,5 +427,13 @@ class MissionRuntimeV2:
         }
 
     def publish(self) -> None:
-        if self.publish_callback is not None:
-            self.publish_callback(self.snapshot())
+        snapshot = self.snapshot()
+        if self.state_publisher is not None:
+            self.state_publisher.publish(snapshot)
+        if self.trace_recorder and self.status in {"running", "paused", "completed"}:
+            self.trace_recorder.record("telemetry", {
+                "mission_id": self.configuration.mission_id,
+                "status": self.status,
+                "progress_percent": snapshot["progress_percent"],
+                "drones": snapshot["drones"],
+            })

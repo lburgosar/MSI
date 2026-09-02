@@ -16,7 +16,7 @@ from __future__ import annotations
 import pygame
 
 from ui.screens.home_screen import HomeScreen
-from ui.screens.mission_screen import MissionScreen
+from ui.screens.v2_mission_screen import MissionScreen
 from ui.screens.splash_screen import SplashScreen
 
 

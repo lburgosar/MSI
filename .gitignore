@@ -24,6 +24,7 @@ Thumbs.db
 
 # Mission reports and execution logs
 manager/mission_studio/data/mission_logs/
+manager/mission_studio/data/v2_traces/
 
 # Live communication state between Studio and Monitor
 manager/shared/live_mission_state.json

@@ -49,11 +49,18 @@ class HomeScreen:
             "recorrer",
             "recorrido",
         },
+        "emergencia": {
+            "emergencia",
+            "respuesta",
+            "incidente",
+            "rescate",
+        },
     }
 
     ACTION_LABELS = {
         "pulverizar": "Pulverización",
         "patrullar": "Patrullaje",
+        "emergencia": "Respuesta de emergencia",
     }
 
     GREETINGS = {
