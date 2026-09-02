@@ -55,7 +55,7 @@ def calculate_layout(
     gap = 6
     chrome_width, chrome_height = window_chrome
     if mode == "vertical":
-        monitor_outer_height = round(work_area.height * 0.34)
+        monitor_outer_height = round(work_area.height * 0.62)
         studio_outer_height = work_area.height - monitor_outer_height - gap
         client_width = work_area.width - chrome_width
         monitor = WindowPlacement(

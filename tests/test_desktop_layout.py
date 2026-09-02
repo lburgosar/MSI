@@ -18,8 +18,8 @@ class DesktopLayoutTests(unittest.TestCase):
     def test_vertical_layout_uses_full_area_without_overlap(self) -> None:
         layout = calculate_layout(self.area, "vertical", (16, 39))
 
-        self.assertEqual(layout.monitor, WindowPlacement(0, 0, 1350, 206))
-        self.assertEqual(layout.studio, WindowPlacement(0, 251, 1350, 430))
+        self.assertEqual(layout.monitor, WindowPlacement(0, 0, 1350, 407))
+        self.assertEqual(layout.studio, WindowPlacement(0, 452, 1350, 229))
         self.assertEqual(layout.studio.y + layout.studio.height + 39, 720)
 
     def test_horizontal_layout_keeps_independent_equal_height_windows(self) -> None:

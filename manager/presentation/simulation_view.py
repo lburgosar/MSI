@@ -85,11 +85,12 @@ class SimulationView:
         start = self.project(trajectory[0], viewport)
         current = self.project(position, viewport)
         endpoint = self.project(target, viewport)
+        target_radius = 5 if viewport.height < 100 else 8
 
         pygame.draw.line(screen, self.PATH_COMPLETE, start, current, width=3)
         pygame.draw.line(screen, self.PATH_PENDING, current, endpoint, width=3)
-        pygame.draw.circle(screen, self.PANEL, endpoint, 8)
-        pygame.draw.circle(screen, self.TARGET_COLOR, endpoint, 8, width=3)
+        pygame.draw.circle(screen, self.PANEL, endpoint, target_radius)
+        pygame.draw.circle(screen, self.TARGET_COLOR, endpoint, target_radius, width=2)
 
     def _render_drone(
         self,
@@ -101,17 +102,21 @@ class SimulationView:
         center = self.project(drone["position"], viewport)
         drone_id = str(drone.get("id", "?"))
         selected = drone_id == self.selected_drone_id
+        compact = viewport.height < 100
+        marker_radius = 11 if compact else 18
+        selection_radius = 15 if compact else 23
+        direction_length = 17 if compact else 27
 
         if selected:
-            pygame.draw.circle(screen, self.SELECTED_COLOR, center, 23)
-            pygame.draw.circle(screen, self.DRONE_COLOR, center, 23, width=3)
+            pygame.draw.circle(screen, self.SELECTED_COLOR, center, selection_radius)
+            pygame.draw.circle(screen, self.DRONE_COLOR, center, selection_radius, width=2)
 
-        pygame.draw.circle(screen, self.DRONE_COLOR, center, 18)
+        pygame.draw.circle(screen, self.DRONE_COLOR, center, marker_radius)
 
         angle = radians(float(drone.get("orientation_degrees", 0.0)))
         direction = (
-            center[0] + int(cos(angle) * 27),
-            center[1] + int(sin(angle) * 27),
+            center[0] + int(cos(angle) * direction_length),
+            center[1] + int(sin(angle) * direction_length),
         )
         pygame.draw.line(screen, self.DRONE_COLOR, center, direction, width=3)
         pygame.draw.circle(screen, self.PANEL, direction, 3)

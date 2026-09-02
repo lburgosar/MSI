@@ -57,7 +57,11 @@ def get_home_prompt_rect(
     mode = get_layout_mode(screen_width)
     margin = get_horizontal_margin(screen_width)
 
-    if mode == "mobile":
+    if screen_height < 360:
+        prompt_width = min(940, screen_width - margin * 2)
+        prompt_height = theme.COMPACT_PROMPT_HEIGHT
+        prompt_y = 82
+    elif mode == "mobile":
         prompt_width = screen_width - margin * 2
         prompt_height = 64
         prompt_y = int(screen_height * 0.48)
@@ -85,6 +89,8 @@ def get_home_question_y(screen_height: int) -> int:
     Posición vertical de la pregunta principal.
     """
 
+    if screen_height < 360:
+        return 42
     return max(135, int(screen_height * 0.34))
 
 
@@ -98,13 +104,14 @@ def get_mission_header_rect(
 
     margin = get_horizontal_margin(screen_width)
 
+    ultra_compact = screen_height < 360
     compact = screen_height < 560
 
     return pygame.Rect(
         margin,
-        12 if compact else 24,
+        4 if ultra_compact else (12 if compact else 24),
         screen_width - margin * 2,
-        82 if compact else 104,
+        58 if ultra_compact else (82 if compact else 104),
     )
 
 
@@ -121,22 +128,23 @@ def get_workspace_rect(
     mode = get_layout_mode(screen_width)
     margin = get_horizontal_margin(screen_width)
 
+    ultra_compact = screen_height < 360
     compact_height = screen_height < 560
-    top = 102 if compact_height else 145
+    top = 72 if ultra_compact else (102 if compact_height else 145)
 
     if mode == "mobile":
         bottom_reserved = 110
         workspace_margin = 14
 
     else:
-        bottom_reserved = 88 if compact_height else 100
+        bottom_reserved = 78 if ultra_compact else (88 if compact_height else 100)
         workspace_margin = margin
 
     return pygame.Rect(
         workspace_margin,
         top,
         screen_width - workspace_margin * 2,
-        max(220, screen_height - top - bottom_reserved),
+        max(72 if ultra_compact else 220, screen_height - top - bottom_reserved),
     )
 
 
@@ -160,7 +168,7 @@ def get_bottom_prompt_rect(
 
     return pygame.Rect(
         (screen_width - prompt_width) // 2,
-        screen_height - prompt_height - 22,
+        screen_height - prompt_height - (8 if screen_height < 360 else 22),
         prompt_width,
         prompt_height,
     )
@@ -208,7 +216,7 @@ def get_finish_button_rect(
 
     return pygame.Rect(
         screen_width - margin - 150,
-        20 if screen_height < 560 else 36,
+        8 if screen_height < 360 else (20 if screen_height < 560 else 36),
         150,
         44,
     )

@@ -56,6 +56,13 @@ class VineyardScene:
 
     @staticmethod
     def get_grid_rect(workspace_rect: pygame.Rect) -> pygame.Rect:
+        if workspace_rect.height < 180:
+            return pygame.Rect(
+                workspace_rect.left + 34,
+                workspace_rect.top + 8,
+                max(100, workspace_rect.width - 68),
+                max(28, workspace_rect.height - 16),
+            )
         return pygame.Rect(
             workspace_rect.left + 62,
             workspace_rect.top + 60,
@@ -87,19 +94,14 @@ class VineyardScene:
             border_radius=22,
         )
 
-        title = self.title_font.render(
-            f"{self.location_name} · Workspace de misión",
-            True,
-            theme.TEXT,
-        )
-
-        screen.blit(
-            title,
-            (
-                workspace_rect.left + 24,
-                workspace_rect.top + 18,
-            ),
-        )
+        compact_workspace = workspace_rect.height < 180
+        if not compact_workspace:
+            title = self.title_font.render(
+                f"{self.location_name} · Workspace de misión",
+                True,
+                theme.TEXT,
+            )
+            screen.blit(title, (workspace_rect.left + 24, workspace_rect.top + 18))
 
         grid_rect = self.get_grid_rect(workspace_rect)
 
@@ -109,36 +111,21 @@ class VineyardScene:
             min(50, grid_rect.width // 14),
         )
 
-        for x in range(
-            grid_rect.left,
-            grid_rect.right + 1,
-            grid_step,
-        ):
-            pygame.draw.line(
-                screen,
-                theme.GRID_LINE,
-                (x, grid_rect.top),
-                (x, grid_rect.bottom),
-                width=1,
-            )
+        if not compact_workspace:
+            for x in range(grid_rect.left, grid_rect.right + 1, grid_step):
+                pygame.draw.line(
+                    screen, theme.GRID_LINE, (x, grid_rect.top), (x, grid_rect.bottom), width=1
+                )
 
-        for y in range(
-            grid_rect.top,
-            grid_rect.bottom + 1,
-            grid_step,
-        ):
-            pygame.draw.line(
-                screen,
-                theme.GRID_LINE,
-                (grid_rect.left, y),
-                (grid_rect.right, y),
-                width=1,
-            )
+            for y in range(grid_rect.top, grid_rect.bottom + 1, grid_step):
+                pygame.draw.line(
+                    screen, theme.GRID_LINE, (grid_rect.left, y), (grid_rect.right, y), width=1
+                )
 
         available_height = grid_rect.height
 
         row_spacing = max(
-            14,
+            3 if workspace_rect.height < 180 else 14,
             available_height // max(
                 self.row_count,
                 1,
@@ -154,7 +141,7 @@ class VineyardScene:
             - total_rows_height // 2
         )
 
-        for row_index in range(self.row_count):
+        for row_index in range(0 if compact_workspace else self.row_count):
             row_y = (
                 first_row_y
                 + row_index * row_spacing
@@ -174,7 +161,7 @@ class VineyardScene:
                 width=max(2, min(5, row_spacing // 5)),
             )
 
-            if workspace_rect.width >= 700:
+            if workspace_rect.width >= 700 and workspace_rect.height >= 180:
                 label = self.label_font.render(
                     f"H{row_index + 1:02d}",
                     True,
@@ -201,23 +188,15 @@ class VineyardScene:
             theme.SECONDARY_TEXT,
         )
 
-        screen.blit(
-            west,
-            (
-                workspace_rect.left + 18,
-                workspace_rect.bottom - 29,
-            ),
-        )
-
-        screen.blit(
-            east,
-            (
-                workspace_rect.right
-                - east.get_width()
-                - 18,
-                workspace_rect.bottom - 29,
-            ),
-        )
+        if workspace_rect.height >= 180:
+            screen.blit(
+                west,
+                (workspace_rect.left + 18, workspace_rect.bottom - 29),
+            )
+            screen.blit(
+                east,
+                (workspace_rect.right - east.get_width() - 18, workspace_rect.bottom - 29),
+            )
 
         self.simulation_view.render(
             screen,
