@@ -18,6 +18,7 @@ class DroneCommand:
     drone_id: str
     target: tuple[float, float]
     task: str
+    waypoints: tuple[tuple[float, float], ...] = ()
 
 
 @dataclass
@@ -34,6 +35,8 @@ class SimulatedDrone:
     assigned_task: str | None = None
     target: tuple[float, float] | None = None
     trajectory: list[tuple[float, float]] = field(default_factory=list)
+    route: list[tuple[float, float]] = field(default_factory=list)
+    waypoint_index: int = 0
 
     def telemetry(self) -> dict[str, Any]:
         return {
@@ -50,6 +53,13 @@ class SimulatedDrone:
                 if self.target is not None
                 else None
             ),
+            "objective": (
+                {"x": self.route[-1][0], "y": self.route[-1][1]}
+                if self.route
+                else None
+            ),
+            "waypoint_index": self.waypoint_index,
+            "waypoint_count": len(self.route),
             "trajectory": [
                 {"x": point[0], "y": point[1]}
                 for point in self.trajectory
@@ -76,9 +86,12 @@ class SimulationEngine:
             if drone is None:
                 raise ValueError(f"Unknown simulated drone: {command.drone_id}")
 
+            route = list(command.waypoints) or [command.target]
             drone.assigned_task = command.task
-            drone.target = command.target
-            drone.trajectory = [drone.position, command.target]
+            drone.route = route
+            drone.waypoint_index = 0
+            drone.target = route[0]
+            drone.trajectory = [drone.position, *route]
             drone.status = "moving"
             drone.speed = self.cruise_speed
 
@@ -119,6 +132,11 @@ class SimulationEngine:
     @staticmethod
     def _arrive(drone: SimulatedDrone) -> None:
         drone.position = drone.target or drone.position
+        if drone.waypoint_index + 1 < len(drone.route):
+            drone.waypoint_index += 1
+            drone.target = drone.route[drone.waypoint_index]
+            drone.status = "moving"
+            return
         drone.speed = 0.0
         drone.status = "on_task"
 
