@@ -22,7 +22,14 @@ MANAGER_ROOT = Path(__file__).resolve().parent
 
 def window_environment(placement: WindowPlacement) -> dict[str, str]:
     environment = os.environ.copy()
-    environment["SDL_VIDEO_WINDOW_POS"] = f"{placement.x},{placement.y}"
+    chrome_width, chrome_height = get_windows_chrome()
+    side_border = chrome_width // 2
+    title_and_top_border = chrome_height - side_border
+    # SDL posiciona el origen del área cliente. Compensamos el marco para que
+    # la barra de título permanezca dentro del área útil y pueda arrastrarse.
+    client_x = placement.x + side_border
+    client_y = placement.y + title_and_top_border
+    environment["SDL_VIDEO_WINDOW_POS"] = f"{client_x},{client_y}"
     environment["MSI_WINDOW_WIDTH"] = str(placement.width)
     environment["MSI_WINDOW_HEIGHT"] = str(placement.height)
     return environment
