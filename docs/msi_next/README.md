@@ -13,12 +13,15 @@ This directory contains proposals and isolated experiments for review. Nothing h
 7. [Operator versus Engineering UX](UX_CONCEPT.md)
 8. [Incremental migration plan, risks and questions](MIGRATION_PLAN.md)
 9. [Track A delivery report](TRACK_A_REPORT.md)
+10. [UX Iteration 01 — map-first operator preview](UX_ITERATION_01.md)
 
 ## Prototypes and mockups
 
 - [Adaptive-grid runnable experiment](../../experiments/msi_next_geospatial/README.md)
 - [Adaptive-grid screenshot](assets/adaptive-grid-prototype.png)
 - [Operator/Engineering wireframes](assets/operator-engineering-wireframes.svg)
+- [UX Iteration 01 desktop render](assets/msi-next-ux-iteration-01.png)
+- [UX Iteration 01 compact render](assets/msi-next-ux-iteration-01-compact.png)
 
 ## Status language
 
