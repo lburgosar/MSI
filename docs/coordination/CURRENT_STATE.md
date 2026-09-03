@@ -1,6 +1,6 @@
 # MSI — Current state
 
-Updated: 2026-09-03T02:42:00-03:00
+Updated: 2026-09-03T02:51:04-03:00
 
 | Field | State |
 |---|---|
@@ -8,7 +8,8 @@ Updated: 2026-09-03T02:42:00-03:00
 | Current stable | `main @ 5eddfee` (`msi-v2.1`) |
 | Current development | Track A complete, awaiting AURO + Leandro review |
 | Active branch | `feature/msi-next-foundations` |
-| Last verified development commit | `d750d1a` |
+| Last verified implementation commit | `d750d1a` |
+| Coordination index baseline | `4e97b50` |
 | Test status | 53 tests passed on 2026-09-03 |
 | Current priority | Review Track A before authorizing Migration Increment 2 |
 
@@ -36,4 +37,4 @@ Updated: 2026-09-03T02:42:00-03:00
 - Command support is declared explicitly; prepared contracts do not imply hardware execution.
 - The tablet-critical rendering technology decision remains open.
 
-See the latest [RAMON to AURO handoff](AURO_HANDOFF.md).
+See the latest [RAMON to AURO review entry point](AURO_HANDOFF.md). Branch `HEAD` is authoritative for the exact current commit.

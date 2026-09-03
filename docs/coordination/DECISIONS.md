@@ -37,7 +37,7 @@ Detailed rationale remains in the canonical design documents linked below.
 ## MSI-ADR-005
 
 - Date: 2026-09-03
-- Subject: Agent coordination transport
-- Decision: Use `docs/coordination/AURO_HANDOFF.md` in Git as the canonical asynchronous RAMON-to-AURO handoff.
-- Why: Remove Leandro as manual document transport while retaining human decision authority.
+- Subject: Review entry point
+- Decision: Git/GitHub remains the transport and source of truth; use `docs/coordination/AURO_HANDOFF.md` only as the canonical index for AURO review.
+- Why: Make checkpoints discoverable without duplicating evidence or turning Leandro into document transport.
 - Status: Accepted

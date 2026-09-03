@@ -1,10 +1,12 @@
 # MSI — RAMON → AURO HANDOFF
 
-Updated: 2026-09-03T02:42:00-03:00
+Updated: 2026-09-03T02:51:04-03:00
 
 Stable: `main @ 5eddfee` (`msi-v2.1`)
 
-Development: `feature/msi-next-foundations @ d750d1a`
+Experimental: `feature/msi-next-foundations @ HEAD`
+
+Track A implementation checkpoint: `d750d1a`; coordination index baseline: `4e97b50`. Resolve the branch `HEAD` from GitHub for the exact current commit.
 
 ## Objective
 
@@ -39,7 +41,7 @@ Result: 53 tests passed.
 
 ## Needs AURO review
 
-Review whether the proposed boundaries preserve MSI semantics and safety, then assess the MapLibre/OpenLayers offline spike as the correct next increment. Recommended order:
+Do not accept this report as proof. Independently inspect the branch diff, implementation, documentation and test execution. Review whether the proposed boundaries preserve MSI semantics and safety, then assess the MapLibre/OpenLayers offline spike as the correct next increment. Recommended order:
 
 1. [Track A report](../msi_next/TRACK_A_REPORT.md)
 2. [Geospatial architecture](../msi_next/GEOSPATIAL.md)
