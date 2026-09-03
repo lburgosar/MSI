@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / "manager"))
 from msi_next.environment import Evidence, EnvironmentFeature, EnvironmentModel, JsonEnvironmentRepository, PersistenceClass
 from msi_next.observations import Observation, ObservationKind
 from msi_next.operational_commands import CommandSupport, OperationalCommand, OperationalCommandType
+from msi_next.geospatial import BasemapDescriptor, BasemapKind, LayerKind, SourceMode, SpatialIntent
 
 
 class MsiNextContractTests(unittest.TestCase):
@@ -51,6 +52,20 @@ class MsiNextContractTests(unittest.TestCase):
     def test_unsupported_command_never_looks_executable(self) -> None:
         command = OperationalCommand("cmd-2", OperationalCommandType.HOLD, "mission-1", "operator", "2026-09-03T08:00:00")
         self.assertFalse(command.executable)
+
+    def test_basemap_contract_requires_attribution(self) -> None:
+        with self.assertRaises(ValueError):
+            BasemapDescriptor("provider", "Map", BasemapKind.MAP, SourceMode.ONLINE, "", 1, 20)
+
+    def test_spatial_intent_is_geometry_not_a_flight_path(self) -> None:
+        intent = SpatialIntent(
+            "precision_spraying",
+            {"type": "MultiPolygon", "coordinates": [[[[-58.4, -34.6], [-58.39, -34.6], [-58.4, -34.6]]]]},
+            interaction_resolution_m=50,
+        )
+        self.assertEqual(intent.coordinate_reference_system, "EPSG:4326")
+        self.assertFalse(hasattr(intent, "waypoints"))
+        self.assertEqual(LayerKind.ENGINEERING_ROUTE.value, "engineering_route")
 
 
 if __name__ == "__main__":
