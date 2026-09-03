@@ -1,6 +1,6 @@
 # MSI — RAMON → AURO HANDOFF
 
-Updated: 2026-09-03T02:51:04-03:00
+Updated: 2026-09-03T11:33:46-03:00
 
 Stable: `main @ 5eddfee` (`msi-v2.1`)
 
@@ -18,6 +18,7 @@ Deliver Track A foundations for MSI NEXT while preserving V2.1 and keeping all e
 - Defined Environment Model, mission lifecycle, Observation and safety-aware OperationalCommand contracts.
 - Documented Operator versus Engineering Mode, map-provider research, architecture and migration plan.
 - Added reviewed UX wireframes and a Track A delivery report.
+- Ran a zero-cost Agent Lab viability spike: three read-only specialist reviews were dispatched, but all hit the shared Codex usage limit before returning findings. No platform was installed and no MSI code changed.
 
 ## What works
 
@@ -59,6 +60,7 @@ This order moves from delivery scope to contracts, interaction model and only th
 - Public OSM tile servers are not an operational/offline map backend.
 - Geometry validation, CRS transformations and authoritative environment merge rules need production hardening.
 - Prepared command contracts must never be presented as supported hardware actions without an adapter.
+- Agent Lab has not demonstrated a dependable zero-cost model backend; its failed review attempt is not an AURO audit.
 
 ## Canonical references
 
@@ -66,6 +68,7 @@ This order moves from delivery scope to contracts, interaction model and only th
 - [Contracts](../msi_next/CONTRACTS.md)
 - [Decisions](DECISIONS.md)
 - [Current state](CURRENT_STATE.md)
+- [Agent Lab Spike 001](../agent_lab/SPIKE_001_TRACK_A_REVIEW.md)
 
 ## Suggested next action
 

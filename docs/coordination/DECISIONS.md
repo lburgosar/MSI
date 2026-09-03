@@ -41,3 +41,19 @@ Detailed rationale remains in the canonical design documents linked below.
 - Decision: Git/GitHub remains the transport and source of truth; use `docs/coordination/AURO_HANDOFF.md` only as the canonical index for AURO review.
 - Why: Make checkpoints discoverable without duplicating evidence or turning Leandro into document transport.
 - Status: Accepted
+
+## MSI-ADR-006
+
+- Date: 2026-09-03
+- Subject: Additional operating cost
+- Decision: Treat USD 0 additional spend as an architecture constraint. Do not use paid APIs, credits, SaaS, cloud or subscriptions without Leandro's explicit authorization.
+- Why: Continue MSI at full strategic priority through local, open-source, included or mocked/adapted paths.
+- Status: Accepted
+
+## MSI-ADR-007
+
+- Date: 2026-09-03
+- Subject: Agent Lab platform
+- Decision: Do not install Flowise, Langflow, AutoGen or Ollama yet. The first read-only review attempt proved orchestration but failed on shared model quota before producing findings.
+- Why: A platform layer cannot solve unavailable model capacity, and Track 3 must save more effort than it consumes.
+- Status: Spike closed; revisit only with a timeboxed local-model benchmark — see [Spike 001](../agent_lab/SPIKE_001_TRACK_A_REVIEW.md).
