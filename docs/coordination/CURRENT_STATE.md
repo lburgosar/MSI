@@ -1,17 +1,16 @@
 # MSI — Current state
 
-Updated: 2026-09-03T11:33:46-03:00
+Updated: 2026-09-03T11:46:00-03:00
 
 | Field | State |
 |---|---|
-| Version / generation | MSI V2.1 stable; MSI NEXT foundations experimental |
+| Version / generation | MSI V2.1 stable; MSI NEXT experimental |
 | Current stable | `main @ 5eddfee` (`msi-v2.1`) |
-| Current development | Track A complete, awaiting AURO + Leandro review |
+| Current development | UX Iteration 01 implemented; awaiting AURO audit and Leandro test |
 | Active branch | `feature/msi-next-foundations` |
-| Last verified implementation commit | `d750d1a` |
-| Coordination index baseline | `4e97b50` |
-| Test status | 53 tests passed on 2026-09-03 |
-| Current priority | Review Track A before authorizing Migration Increment 2 |
+| Last verified implementation commit | `b52d3dd` |
+| Test status | 57 tests passed on 2026-09-03 |
+| Current priority | Audit and human-test UX Iteration 01 |
 
 ## Implemented
 
@@ -22,24 +21,23 @@ Updated: 2026-09-03T11:33:46-03:00
 
 - Adaptive spatial grid, geographic persistence and GeoJSON export.
 - Environment, Observation, OperationalCommand, basemap, layer and SpatialIntent contracts.
-- Operator/Engineering UX wireframes.
+- Functional responsive map-first operator preview with guided spraying lifecycle, simulated reconnaissance/execution and wind safety event.
 
 ## Not implemented
 
 - Real basemap or lawful offline tile package.
 - MSI NEXT connection to Mission Runtime.
-- Wind/environment injection through the prototype.
-- Production MSI NEXT HMI or real vehicle adapters.
+- Real environmental provider, actual replanning or real vehicle adapters.
+- Production MSI NEXT HMI.
 
 ## Known limitations
 
-- The grid prototype uses a clearly labelled basemap placeholder.
-- Command support is declared explicitly; prepared contracts do not imply hardware execution.
+- Agricultural map context and operational events are simulations.
+- Command support contracts do not imply hardware execution.
 - The tablet-critical rendering technology decision remains open.
-- Agent Lab Spike 001 hit the shared Codex usage limit before specialist findings; no dependable zero-cost model backend has been demonstrated.
 
 ## Cost constraint
 
-Additional software, API, SaaS, cloud and model budget is USD 0. Paid integrations may be prepared as adapters only and must be labelled `READY — REQUIRES PAID SERVICE`; local/free alternatives remain the execution path.
+Additional software/API/SaaS/cloud/model budget is USD 0. Paid integrations require explicit authorization; local/free paths remain preferred.
 
-See the latest [RAMON to AURO review entry point](AURO_HANDOFF.md) and [Agent Lab Spike 001](../agent_lab/SPIKE_001_TRACK_A_REVIEW.md). Branch `HEAD` is authoritative for the exact current commit.
+See the latest [review entry point](AURO_HANDOFF.md). Branch `HEAD` is authoritative for the exact current commit.

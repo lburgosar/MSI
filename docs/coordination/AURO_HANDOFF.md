@@ -1,75 +1,68 @@
 # MSI — RAMON → AURO HANDOFF
 
-Updated: 2026-09-03T11:33:46-03:00
+Updated: 2026-09-03T11:46:00-03:00
 
 Stable: `main @ 5eddfee` (`msi-v2.1`)
 
 Experimental: `feature/msi-next-foundations @ HEAD`
 
-Track A implementation checkpoint: `d750d1a`; coordination index baseline: `4e97b50`. Resolve the branch `HEAD` from GitHub for the exact current commit.
+Latest implementation checkpoint: `b52d3dd`. Resolve branch `HEAD` from GitHub for the exact coordination commit.
 
 ## Objective
 
-Deliver Track A foundations for MSI NEXT while preserving V2.1 and keeping all experiments isolated from the production HMI and Mission Runtime.
+Deliver the first functional map-first MSI NEXT operator experience while preserving V2.1 and keeping it isolated from the production HMI and Mission Runtime.
 
 ## What changed
 
-- Added the adaptive-grid prototype and provider-neutral geospatial contracts.
-- Defined Environment Model, mission lifecycle, Observation and safety-aware OperationalCommand contracts.
-- Documented Operator versus Engineering Mode, map-provider research, architecture and migration plan.
-- Added reviewed UX wireframes and a Track A delivery report.
-- Ran a zero-cost Agent Lab viability spike: three read-only specialist reviews were dispatched, but all hit the shared Codex usage limit before returning findings. No platform was installed and no MSI code changed.
+- Replaced the grid-only screen with a responsive spraying journey: intent, area, preflight, reconnaissance, correction, final plan, authorization and execution.
+- Added progressive precision details, resource/environment context, animated operation, global progress and visible wind-triggered pause/explanation.
+- Added desktop/compact visual evidence and a separately tested presentation workflow.
 
 ## What works
 
-The standalone prototype supports spatial selection, erasure, adaptive resolution/zoom, geographic persistence across resolution changes, clearing and GeoJSON MultiPolygon export. All contracts are importable and unit tested. V2.1 remains intact.
+The preview supports spatial selection and erasure, adaptive zoom/resolution, geographic persistence, GeoJSON export and the complete simulated operator flow. Wind can be injected with an evident safety pause. Desktop and compact renders were inspected. V2.1 remains intact.
 
-The prototype does **not** demonstrate a real map, Mission Runtime integration, wind injection, mission execution, a final HMI, or real vehicle control.
+It does **not** demonstrate a real map, Mission Runtime integration, actual replanning, a final HMI or real vehicle control. Agricultural context, resources, reconnaissance, wind and execution are simulated and labelled.
 
 ## Tests
 
 `manager\mission_studio\.venv\Scripts\python.exe -m unittest discover -s tests -q`
 
-Result: 53 tests passed.
+Result: 57 tests passed.
 
 ## Decisions made
 
-- Geographic intent is geometry, not screen-cell identity or a flight route.
-- Basemap access is behind a provider contract with explicit attribution.
-- Observations carry evidence but cannot issue decisions.
-- Operational commands separate confirmation, criticality and actual adapter support.
-- No production map renderer was selected; that tablet-significant decision remains gated.
+- A single contextual primary action guides the normal operator path.
+- Technical coordinates/parameters remain behind progressive disclosure.
+- Simulated operational events are explicit UI controls, not hidden keyboard-only commands.
+- The UX model remains independent from Pygame and production Runtime.
 
 ## Needs AURO review
 
-Do not accept this report as proof. Independently inspect the branch diff, implementation, documentation and test execution. Review whether the proposed boundaries preserve MSI semantics and safety, then assess the MapLibre/OpenLayers offline spike as the correct next increment. Recommended order:
+Do not accept this report as proof. Independently inspect and execute the branch. Review in this order:
 
-1. [Track A report](../msi_next/TRACK_A_REPORT.md)
-2. [Geospatial architecture](../msi_next/GEOSPATIAL.md)
-3. [Environment Model](../msi_next/ENVIRONMENT_MODEL.md)
-4. [Mission lifecycle](../msi_next/MISSION_LIFECYCLE.md)
-5. [Operator/Engineering UX](../msi_next/UX_CONCEPT.md)
-6. [Migration plan](../msi_next/MIGRATION_PLAN.md)
-7. [Adaptive-grid prototype](../../experiments/msi_next_geospatial/README.md)
-
-This order moves from delivery scope to contracts, interaction model and only then the executable experiment, reducing the risk of mistaking the prototype for the product.
+1. [UX Iteration 01](../msi_next/UX_ITERATION_01.md)
+2. [Runnable preview](../../experiments/msi_next_geospatial/README.md)
+3. `experiments/msi_next_geospatial/prototype.py`
+4. `manager/msi_next/workflow.py`
+5. `tests/test_msi_next_workflow.py`
+6. [Track A report](../msi_next/TRACK_A_REPORT.md)
 
 ## Risks / concerns
 
-- Renderer choice could constrain MSI TAB, offline packaging and Python integration.
-- Public OSM tile servers are not an operational/offline map backend.
-- Geometry validation, CRS transformations and authoritative environment merge rules need production hardening.
-- Prepared command contracts must never be presented as supported hardware actions without an adapter.
-- Agent Lab has not demonstrated a dependable zero-cost model backend; its failed review attempt is not an AURO audit.
+- The simulated agricultural surface is not evidence of a cartographic provider.
+- The lifecycle preview does not yet drive Mission Runtime or real command adapters.
+- Polygon/line/point precision editors and actual replanning remain future increments.
+- Renderer choice still affects MSI TAB, offline packaging and Python integration.
 
 ## Canonical references
 
+- [UX Iteration 01](../msi_next/UX_ITERATION_01.md)
 - [Architecture](../msi_next/ARCHITECTURE.md)
-- [Contracts](../msi_next/CONTRACTS.md)
-- [Decisions](DECISIONS.md)
+- [Geospatial design](../msi_next/GEOSPATIAL.md)
 - [Current state](CURRENT_STATE.md)
-- [Agent Lab Spike 001](../agent_lab/SPIKE_001_TRACK_A_REVIEW.md)
+- [Decisions](DECISIONS.md)
 
 ## Suggested next action
 
-Approve or reject Migration Increment 2: a strictly isolated, measured MapLibre GL JS versus OpenLayers spike using a lawful small PMTiles/MBTiles dataset, without replacing Studio or merging to `main`.
+Audit UX Iteration 01 while Leandro tests it; identify only blocking UX, architecture or safety issues before the next increment.
