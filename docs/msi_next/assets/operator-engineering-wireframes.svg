@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <style>
+    .bg{fill:#071012}.panel{fill:#102023;stroke:#365157;stroke-width:2}.map{fill:#263b31;stroke:#69ad7a;stroke-width:2}.title{fill:#f2f7f4;font:700 24px sans-serif}.text{fill:#cbd8d2;font:15px sans-serif}.accent{fill:#43d477;font:700 14px sans-serif}.critical{fill:#d85656}.button{fill:#17332a;stroke:#43d477;stroke-width:2}.grid{stroke:#71927b;stroke-width:1;opacity:.5}
+  </style>
+  <rect class="bg" width="1440" height="900"/>
+  <text class="title" x="30" y="38">MSI NEXT · WIREFRAMES FOR REVIEW</text>
+  <text class="accent" x="30" y="66">OPERATOR MODE — SIMPLE SURFACE, DIRECT SAFETY CONTROL</text>
+  <rect class="panel" x="25" y="85" width="1390" height="350" rx="12"/>
+  <rect class="panel" x="40" y="105" width="235" height="305" rx="8"/>
+  <text class="text" x="58" y="135">INTENT / PARAMETERS</text><text class="text" x="58" y="170">Spray North Lot</text><text class="text" x="58" y="202">MSI proposal</text><text class="text" x="58" y="234">Viability / risks</text><text class="text" x="58" y="266">Modify · Simulate</text>
+  <rect class="map" x="290" y="105" width="790" height="305" rx="8"/>
+  <path class="grid" d="M290 165H1080M290 225H1080M290 285H1080M290 345H1080M400 105V410M510 105V410M620 105V410M730 105V410M840 105V410M950 105V410"/>
+  <path fill="#39c86c" opacity=".45" d="M510 165h330v180H620v-60H510z"/><text class="title" x="530" y="145">TERRITORY + WORK STATE</text>
+  <rect class="panel" x="1095" y="105" width="300" height="305" rx="8"/><text class="text" x="1114" y="135">ASSIGNED RESOURCES</text><text class="text" x="1114" y="170">SENSORS / ALERTS</text><text class="text" x="1114" y="205">MSI DECISION + IMPACT</text>
+  <rect class="button" x="855" y="22" width="150" height="50" rx="8"/><text class="accent" x="902" y="53">PAUSE</text><rect class="critical" x="1020" y="22" width="150" height="50" rx="8"/><text class="title" x="1052" y="54">ABORT</text>
+  <text class="accent" x="30" y="485">ENGINEERING / SIMULATION MODE — EXPLICITLY LABELLED</text>
+  <rect class="panel" x="25" y="505" width="1390" height="360" rx="12"/>
+  <rect class="panel" x="40" y="525" width="280" height="315" rx="8"/><text class="text" x="58" y="557">SCENARIO CONTROL · SIM ONLY</text><text class="text" x="58" y="592">Wind current → injected</text><text class="text" x="58" y="626">Battery / product / link</text><text class="text" x="58" y="660">Sensor / observation</text><text class="text" x="58" y="694">APPLY / RESTORE</text>
+  <rect class="map" x="335" y="525" width="700" height="315" rx="8"/><text class="title" x="515" y="565">MAP + OPTIONAL ROUTE OVERLAY</text><path stroke="#61a9db" stroke-width="2" fill="none" d="M420 760L560 620L720 760L910 590"/>
+  <rect class="panel" x="1050" y="525" width="345" height="315" rx="8"/><text class="text" x="1068" y="557">RAW TELEMETRY</text><text class="text" x="1068" y="592">TRACE / REPLAY</text><text class="text" x="1068" y="626">PROVIDER HEALTH</text><text class="text" x="1068" y="660">CONDITION → EVALUATION</text><text class="text" x="1068" y="694">DECISION → IMPACT → ACTION</text>
+</svg>
