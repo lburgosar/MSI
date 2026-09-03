@@ -12,6 +12,7 @@ This directory contains proposals and isolated experiments for review. Nothing h
 6. [Observation and operational-command contracts](CONTRACTS.md)
 7. [Operator versus Engineering UX](UX_CONCEPT.md)
 8. [Incremental migration plan, risks and questions](MIGRATION_PLAN.md)
+9. [Track A delivery report](TRACK_A_REPORT.md)
 
 ## Prototypes and mockups
 
@@ -25,4 +26,3 @@ This directory contains proposals and isolated experiments for review. Nothing h
 - **Prepared:** contract/prototype exists but is not wired to V2.1.
 - **Proposal:** requires product/architecture review.
 - **Roadmap:** not implemented.
-
